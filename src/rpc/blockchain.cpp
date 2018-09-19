@@ -990,21 +990,22 @@ UniValue calculateaccumulatorvalues(const UniValue& params, bool fHelp)
 
     uint256 nCheckpointCalculated = 0;
 
-    AccumulatorMap mapAccumulators(Params().Zerocoin_Params(pindex->nHeight < Params().Zerocoin_Block_V2_Start()));
+    AccumulatorMap mapAccumulators(Params().Zerocoin_Params(false));
 
     if (!CalculateAccumulatorCheckpointWithoutDB(nHeight, nCheckpointCalculated, mapAccumulators))
         return error("%s : failed to calculate accumulator checkpoint", __func__);
 
     UniValue ret(UniValue::VARR);
+    UniValue obj(UniValue::VOBJ);
 
+    obj.push_back(Pair("height", nHeight));
     for (libzerocoin::CoinDenomination denom : libzerocoin::zerocoinDenomList) {
         CBigNum bnValue;
 
         bnValue = mapAccumulators.GetValue(denom);
-        UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair(std::to_string(denom), bnValue.GetHex()));
-        ret.push_back(obj);
     }
+    ret.push_back(obj);
 
     return ret;
 }
