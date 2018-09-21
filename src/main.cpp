@@ -1035,9 +1035,7 @@ bool CheckZerocoinSpend(const CTransaction& tx, bool fVerifySignature, CValidati
             CBigNum bnAccumulatorValue = 0;
             if (!zerocoinDB->ReadAccumulatorValue(newSpend.getAccumulatorChecksum(), bnAccumulatorValue)) {
                 uint32_t nChecksum = newSpend.getAccumulatorChecksum();
-//                pwalletMain->getV1bnAccumulatorValue(newSpend, bnAccumulatorValue);
-                //return state.DoS(100, error("%s: Zerocoinspend could not find accumulator associated with checksum %s", __func__, HexStr(BEGIN(nChecksum), END(nChecksum))));
-                bnAccumulatorValue.SetHex("b213bf4b8b74db4266cb2705f01661f78e3ec4fd8f41e039484b6a2debf94f0c127f8ff841f976f73768835aec3e7b8c53afbf05c4a200864209eecdffe4fd8353638a0d0b2fee1f2afcce46cd26782b0ac78eac6a095a6f080a02e57f727f9a07bf99c417c9f2ac95088cdc5e58078d0af745b61106bae92422566dda6e1b1bd941dd00abbe59f7d6718e5ff1b53bf05a9048d3cd229b76af716634858fa41d2283acd33f0f6a338acce4646b039f214332726ca11c433e3a95e918f8ae45a3a976bf93b4bb4bb32b074c4eb60b0beae42ad1dc57da69070d5f92ef51942f7d4b63d67af5fdea748f0a222079eb0df63e38a7600dd704d8192a8e8f8e70989e");
+                return state.DoS(100, error("%s: Zerocoinspend could not find accumulator associated with checksum %s", __func__, HexStr(BEGIN(nChecksum), END(nChecksum))));
             }
 
             Accumulator accumulator(Params().Zerocoin_Params(chainActive.Height() < Params().Zerocoin_Block_V2_Start()),
@@ -4921,7 +4919,6 @@ bool CVerifyDB::VerifyDB(CCoinsView* coinsview, int nCheckLevel, int nCheckDepth
                 return error("VerifyDB() : *** found unconnectable block at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
         }
     }
-    // check if V1 accumulator hashes are loaded
 
     LogPrintf("No coin database inconsistencies in last %i blocks (%i transactions)\n", chainActive.Height() - pindexState->nHeight, nGoodTransactions);
 

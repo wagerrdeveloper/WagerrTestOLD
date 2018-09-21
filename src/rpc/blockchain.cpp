@@ -996,8 +996,8 @@ UniValue calculateaccumulatorvalues(const UniValue& params, bool fHelp)
         return error("%s : failed to calculate accumulator checkpoint", __func__);
 
     UniValue ret(UniValue::VARR);
-
     UniValue obj(UniValue::VOBJ);
+
     obj.push_back(Pair("height", nHeight));
     for (libzerocoin::CoinDenomination denom : libzerocoin::zerocoinDenomList) {
         CBigNum bnValue;

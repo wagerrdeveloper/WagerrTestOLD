@@ -145,8 +145,7 @@ public:
         nLastPOWBlock = 1001;                   // PoW Phase 3 End
         nModifierUpdateBlock = 1100;            // Modify block on height
         nZerocoinStartHeight = 1500;            // Zerocoin start height
-//        nZerocoinStartHeight = 50;            // Start accumulation coins here - first zerocoin mint occurs at block 87
-        nZerocoinAccumulationStartHeight = 1500;
+        nZerocoinAccumulationStartHeight = 1500;// RCP command starts accumulation here - first zerocoin mint occurs at block 87
         nZerocoinStartTime = 1518696182;        // GMT: Thursday, 15. February 2018 12:03:02
         nBlockEnforceSerialRange = 1;           // Enforce serial range starting this block
         nBlockRecalculateAccumulators = 1650;   // Trigger a recalculation of accumulators
