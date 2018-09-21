@@ -3878,7 +3878,9 @@ UniValue sendmasternodeowners(const UniValue& params, bool fHelp)
 
     /*
      * First implementation: assume all tx.outs fit in 1 tx
-     * Second implementation: take 2 vouts, with dev fund and burn as the 2 change addresses
+     * Update: Some WGR addresses hold multiple MNs. Since it's not allowed to have multiple vouts pointing to the same address, 
+     *         it's necessary to count how many payments an address needs to receive.
+     * To do: calculate how many new fees have been generated since last payout
      */
 
     UniValue paramsListmasternodes(UniValue::VARR);
@@ -3903,8 +3905,24 @@ UniValue sendmasternodeowners(const UniValue& params, bool fHelp)
     CAmount nAmount = nToDistributeAmount / UVmasternodelist.size();
     CAmount totalAmount = 0;
 
+    std::map<std::string, int> mapMasternodePayouts;
+
     BOOST_FOREACH(const UniValue& mnToPay, UVmasternodelist.getValues()) {
         string mnToPayAddress = mnToPay.getValues()[5].getValStr();
+        
+        if (mapMasternodePayouts.find(mnToPayAddress) == mapMasternodePayouts.end()) {
+            mapMasternodePayouts.insert(make_pair(mnToPayAddress, 1));
+        } else {
+            mapMasternodePayouts[mnToPayAddress]++;
+        }
+    }
+
+    std::map<std::string, int>::iterator it = mapMasternodePayouts.begin();
+
+    while (it != mapMasternodePayouts.end()){
+        string mnToPayAddress = it->first;
+        int mnsAtAddress = it->second;
+        
         CBitcoinAddress address(mnToPayAddress);
         if (!address.IsValid())
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Wagerr address: ")+mnToPayAddress);
@@ -3914,9 +3932,11 @@ UniValue sendmasternodeowners(const UniValue& params, bool fHelp)
         setAddress.insert(address);
 
         CScript scriptPubKey = GetScriptForDestination(address.Get());
-        totalAmount += nAmount;
+        totalAmount += nAmount * mnsAtAddress;
 
-        vecSend.push_back(make_pair(scriptPubKey, nAmount));
+        vecSend.push_back(make_pair(scriptPubKey, nAmount * mnsAtAddress));
+
+        it++;
     }
 
 /*
