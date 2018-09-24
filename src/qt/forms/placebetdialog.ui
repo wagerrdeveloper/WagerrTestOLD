@@ -3030,7 +3030,7 @@
                     <item>
                      <widget class="QLabel" name="warningLabel">
                       <property name="text">
-                       <string>Any bets placed on 0 or N/A odds will be burned. Do not make bets on 0 or N/A odds.</string>
+                       <string>A 6% Direct-Chain betting fee is applied to the profit of winning bets.</string>
                       </property>
                       <property name="alignment">
                        <set>Qt::AlignLeft|Qt::AlignTrailing|Qt::AlignVCenter</set>
