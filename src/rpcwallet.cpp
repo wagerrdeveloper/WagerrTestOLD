@@ -333,6 +333,7 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
         entry.push_back(Pair("blocktime", mapBlockIndex[wtx.hashBlock]->GetBlockTime()));
+        entry.push_back(Pair("blockrewards", ValueFromAmount(GetBlockValue(mapBlockIndex[wtx.hashBlock]->nHeight))));
     }
     uint256 hash = wtx.GetHash();
     entry.push_back(Pair("txid", hash.GetHex()));
@@ -1614,7 +1615,24 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
             entry.push_back(Pair("account", strSentAccount));
             MaybePushAddress(entry, s.destination);
             std::map<std::string, std::string>::const_iterator it = wtx.mapValue.find("DS");
-            entry.push_back(Pair("category", (it != wtx.mapValue.end() && it->second == "1") ? "darksent" : "send"));
+            if (it != wtx.mapValue.end() && it->second == "1"){
+                entry.push_back(Pair("category", "darksent"));
+            } else if (wtx.IsZerocoinMint()){
+                entry.push_back(Pair("category", "zerocoinmint"));
+            } else if (wtx.IsZerocoinSpend()){
+                entry.push_back(Pair("category", "zerocoinspend"));
+            } else if (wtx.IsCoinStake()) {
+                // CoinStakes are categorized as 'sent' since they debit from our account.
+                // However, since they credit more, they might also qualify as 'received'.
+                if (wtx.GetDepthInMainChain() < 1)
+                    entry.push_back(Pair("category", "orphan"));
+                else if (wtx.GetBlocksToMaturity() > 0)
+                    entry.push_back(Pair("category", "coinstake"));
+                else
+                    entry.push_back(Pair("category", "coinstake"));
+            } else {
+                entry.push_back(Pair("category", "send"));
+            }
             entry.push_back(Pair("amount", ValueFromAmount(-s.amount)));
             entry.push_back(Pair("vout", s.vout));
             entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
