@@ -100,6 +100,7 @@ BITCOIN_CORE_H = \
   allocators.h \
   amount.h \
   base58.h \
+  bet.h \
   bip38.h \
   bloom.h \
   blocksignature.h \
@@ -212,6 +213,7 @@ libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
   addrman.cpp \
   alert.cpp \
+  bet.cpp \
   bloom.cpp \
   blocksignature.cpp \
   chain.cpp \
