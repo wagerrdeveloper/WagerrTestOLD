@@ -119,7 +119,7 @@ UniValue listevents(const UniValue& params, bool fHelp)
                          // TODO Implement mapping tournament and round names from
                          // indexes to strings once the implementation of mapping
                          // transactions has been completed.
-                         evt.push_back(Pair("name", (uint64_t) plEvent.nTournament));
+                         evt.push_back(Pair("id", (uint64_t) plEvent.nTournament));
                          evt.push_back(Pair("round", (uint64_t) plEvent.nStage));
 
                          evt.push_back(Pair("starting", (uint64_t) plEvent.nStartTime));
@@ -127,12 +127,12 @@ UniValue listevents(const UniValue& params, bool fHelp)
                          UniValue teams(UniValue::VARR);
 
                          UniValue home(UniValue::VOBJ);
-                         home.push_back(Pair("name", (uint64_t) plEvent.nHomeTeam));
+                         home.push_back(Pair("id", (uint64_t) plEvent.nHomeTeam));
                          home.push_back(Pair("odds", (uint64_t) plEvent.nHomeOdds));
                          teams.push_back(home);
 
                          UniValue away(UniValue::VOBJ);
-                         away.push_back(Pair("name", (uint64_t) plEvent.nAwayTeam));
+                         away.push_back(Pair("id", (uint64_t) plEvent.nAwayTeam));
                          away.push_back(Pair("odds", (uint64_t) plEvent.nAwayOdds));
                          teams.push_back(away);
 
@@ -140,7 +140,7 @@ UniValue listevents(const UniValue& params, bool fHelp)
                          // team. It may make more sense to name the parent property
                          // "outcomes".
                          UniValue draw(UniValue::VOBJ);
-                         draw.push_back(Pair("name", "Draw"));
+                         draw.push_back(Pair("id", "Draw"));
                          draw.push_back(Pair("odds", (uint64_t) plEvent.nDrawOdds));
                          teams.push_back(draw);
 
@@ -267,7 +267,7 @@ UniValue listchaingamesevents(const UniValue& params, bool fHelp)
 // This would ideally be abstracted when time allows.
 UniValue listbets(const UniValue& params, bool fHelp)
 {
-    // TODO The command-line parameters for this command aren't handled as.
+    // TODO The command-line parameters for this command aren't handled as
     // described, either the documentation or the behaviour of this command
     // should be corrected when time allows.
 
@@ -766,7 +766,7 @@ UniValue placebet(const UniValue& params, bool fHelp)
     // blockchain incorrectly if its length is less than 5. This behaviour would
     // ideally be investigated and corrected/justified when time allows.
     std::string opCode;
-    plBet.ToOpCode( plBet, opCode);
+    plBet.ToOpCode(plBet, opCode);
     SendMoney(address.Get(), nAmount, wtx, false, opCode);
 
     return wtx.GetHash().GetHex();
