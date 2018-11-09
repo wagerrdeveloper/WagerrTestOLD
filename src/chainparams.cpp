@@ -174,6 +174,9 @@ public:
         strBetTxType = "2";                                             // Bet transaction type ID.
         strResultTxType = "3";                                          // Result transaction type ID.
         strRefundTxType = "4";                                          // Refund bets transaction type ID.
+        strCGLottoEventTxType = "5";                                    // Chain game Lotto event transaction type ID
+        strCGLottoBetTxType = "6";                                      // Chain game Lotto bet transaction type ID
+        strCGLottoResultTxType = "7";                                   // Chain game Lotto result transaction type ID
         nMinBetPayoutRange = 50;                                        // Spam filter to prevent malicious actors congesting the chain (Only payout bets that are between 50 - 10000 WRG inclusive).
         nMaxBetPayoutRange = 10000;                                     // Minimizes maximum payout size to avoid unnecessary large numbers (Only payout bets that are between 50 - 10000 WRG inclusive).
         nBetPlaceTimeoutBlocks = 1200;                                  // Discard bets placed less than 1200 seconds (approx. 20 mins) before event start time
@@ -320,6 +323,9 @@ public:
         strBetTxType = "2";                                             // Bet transaction type ID.
         strResultTxType = "3";                                          // Result transaction type ID.
         strRefundTxType = "4";                                          // Refund bets transaction type ID.
+        strCGLottoEventTxType = "5";                                    // Chain game Lotto event transaction type ID
+        strCGLottoBetTxType = "6";                                      // Chain game Lotto bet transaction type ID
+        strCGLottoResultTxType = "7";                                   // Chain game Lotto result transaction type ID
         nMinBetPayoutRange = 50;                                        // Spam filter to prevent malicious actors congesting the chain (Only payout bets that are between 50 - 10000 WRG inclusive).
         nMaxBetPayoutRange = 10000;                                     // Minimizes maximum payout size to avoid unnecessary large numbers (Only payout bets that are between 50 - 10000 WRG inclusive).
         nBetPlaceTimeoutBlocks = 1200;                                  // Discard bets placed less than 1200 seconds (approx. 20 mins) before event start time,
