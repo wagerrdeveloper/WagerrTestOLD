@@ -42,6 +42,8 @@ bool IsValidOracleTx(const CTxIn &txin);
 class CPeerlessEvent
 {
 public:
+    int nVersion;
+
     uint32_t nEventId;
     uint64_t nStartTime;
     uint32_t nSport;
@@ -58,7 +60,31 @@ public:
 
     static bool ToOpCode(CPeerlessEvent pe, std::string &opCode);
     static bool FromOpCode(std::string opCode, CPeerlessEvent &pe);
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp (Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(this->nVersion);
+        nVersion = this->nVersion;
+        READWRITE(nEventId);
+        READWRITE(nStartTime);
+        READWRITE(nSport);
+        READWRITE(nTournament);
+        READWRITE(nStage);
+        READWRITE(nHomeTeam);
+        READWRITE(nAwayTeam);
+        READWRITE(nHomeOdds);
+        READWRITE(nAwayOdds);
+        READWRITE(nDrawOdds);
+    }
 };
+
+// Define new map type to store Wagerr events.
+typedef std::map<uint32_t, CPeerlessEvent> eventIndex_t;
+
+// Global variable that stores the current live Wagerr events.
+eventIndex_t eventIndex;
 
 class CPeerlessBet
 {
@@ -154,6 +180,19 @@ public:
 
     static bool ToOpCode(CChainGamesResult cgr, std::string &opCode);
     static bool FromOpCode(std::string opCode, CChainGamesResult &cgr);
+};
+
+class CEventDB
+{
+private:
+    boost::filesystem::path pathEvents;
+
+public:
+    // Default constructor.
+    CEventDB();
+
+    bool Write(const eventIndex_t& eventIndex,  uint256 latestProcessedBlock);
+    bool Read(eventIndex_t& eventIndex, uint256& lastBlockHash);
 };
 
 #endif // WAGERR_BET_H
