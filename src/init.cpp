@@ -24,6 +24,7 @@
 #include "invalid.h"
 #include "key.h"
 #include "main.h"
+#include "bet.h"
 #include "masternode-budget.h"
 #include "masternode-payments.h"
 #include "masternodeconfig.h"
@@ -192,6 +193,23 @@ void PrepareShutdown()
     TRY_LOCK(cs_Shutdown, lockShutdown);
     if (!lockShutdown)
         return;
+
+    // TODO - We are assuming that the use of locks will not be required when
+    // writing the event index to the events.dat because all writing to
+    // events.dat should happen on the same thread. If this is not the case
+    // then a lock mechanism will have to be implemented to ensure we don't
+    // corrupt events.dat  when we want the write to it.
+    // Get the latest block hash.
+    CBlockIndex *blockIndex = NULL;
+    blockIndex = chainActive[chainActive.Height()];
+
+    CBlock block;
+    ReadBlockFromDisk(block, blockIndex);
+    uint256 latestBlockHash = block.GetHash();
+
+    // Write the event index data to disk.
+    CEventDB pedb;
+    pedb.Write(eventIndex, latestBlockHash);
 
     /// Note: Shutdown() must be able to handle cases in which AppInit2() failed part of the way,
     /// for example if the data directory was found to be locked.
@@ -1407,6 +1425,15 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 pcoinsdbview = new CCoinsViewDB(nCoinDBCache, false, fReindex);
                 pcoinscatcher = new CCoinsViewErrorCatcher(pcoinsdbview);
                 pcoinsTip = new CCoinsViewCache(pcoinscatcher);
+
+                // TODO - When reading from the events.dat we also return the
+                // last block hash. The idea was to use this to cycle the block chain
+                // from that block and update the event index with any missing data.
+                // AcceptBlock() already does this, but if this is not good enough
+                // then we may have to implement the solution outlined above.
+                CEventDB pedb;
+                uint256 lastBlockHash;
+                pedb.Read(eventIndex, lastBlockHash);
 
                 if (fReindex)
                     pblocktree->WriteReindexing(true);

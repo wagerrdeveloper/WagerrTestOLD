@@ -8,6 +8,7 @@
 
 #include "amount.h"
 #include "base58.h"
+#include "bet.h"
 #include "core_io.h"
 #include "init.h"
 #include "net.h"
@@ -20,6 +21,7 @@
 #include "walletdb.h"
 #include "zwgrchain.h"
 
+#include <cstdlib>
 #include <stdint.h>
 
 #include "libzerocoin/Coin.h"
@@ -70,13 +72,6 @@ UniValue listevents(const UniValue& params, bool fHelp)
     // Set the Oracle wallet address. 
     std::string OracleWalletAddr = Params().OracleWalletAddr();
 
-    // We keep track of `vout`s that are addressed to our "Core Wallet" (the
-    // wallet that we use to issue events and results). Afterwards, if a `vin`
-    // for a transaction corresponds to a transaction ID/`vout` index pair then
-    // we know that that transaction has been sent from our "Core Wallet" and we
-    // will process the transaction.
-    std::map<uint256, uint32_t> coreWalletVouts;
-
     // TODO We currently search the entire block chain every time we query the
     // current events. Instead, the events up to a particular block/transaction
     // should be read and cached when the process starts, and ideally persisted,
@@ -84,93 +79,75 @@ UniValue listevents(const UniValue& params, bool fHelp)
     CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
 
     while (pindex) {
-
         CBlock block;
         ReadBlockFromDisk(block, pindex);
 
-        BOOST_FOREACH(CTransaction& tx, block.vtx) {
-
+        BOOST_FOREACH (CTransaction& tx, block.vtx) {
             uint256 txHash = tx.GetHash();
 
             // Ensure the event TX has come from Oracle wallet.
             const CTxIn &txin = tx.vin[0];
-            COutPoint prevout = txin.prevout;
-            bool validEventTx = false;
+            bool validEventTx = IsValidOracleTx(txin);
 
-            uint256 hashBlock;
-            CTransaction txPrev;
-            if (GetTransaction(prevout.hash, txPrev, hashBlock, true)) {
+            if (validEventTx) {
+                // loop over all the TX vouts to check them for OP_RETURN.
+                for (unsigned int i = 0; i < tx.vout.size(); i++) {
+                    const CTxOut &txout = tx.vout[i];
+                    std::string scriptPubKey = txout.scriptPubKey.ToString();
 
-                const CTxOut &txout = txPrev.vout[0];
-                std::string scriptPubKey = txout.scriptPubKey.ToString();
+                    if(scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
 
-                txnouttype type;
-                vector<CTxDestination> addrs;
-                int nRequired;
-                if (!ExtractDestinations(txout.scriptPubKey, type, addrs, nRequired)) {
-                    continue;
-                }
+                         std::vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
+                         std::string OpCode(vOpCode.begin(), vOpCode.end());
 
-                BOOST_FOREACH (const CTxDestination &addr, addrs) {
-                    if (CBitcoinAddress(addr).ToString() == OracleWalletAddr) {
-                        LogPrintf( "MATCH vinAddr %s Our Addr %s \n", CBitcoinAddress(addr).ToString().c_str(), OracleWalletAddr );
-                        validEventTx = true;
-                        break;
+                         CPeerlessEvent plEvent;
+                         if (!CPeerlessEvent::FromOpCode(OpCode, plEvent)) {
+                             continue;
+                         }
+
+                         time_t time = plEvent.nStartTime;
+                         time_t currentTime = std::time(0);
+                         if (time < (currentTime - Params().BetPlaceTimeoutBlocks())) {
+                             continue;
+                         }
+
+                         UniValue evt( UniValue::VOBJ );
+
+                         evt.push_back(Pair("tx-id", txHash.ToString().c_str()));
+                         evt.push_back(Pair("id", (uint64_t) plEvent.nEventId));
+
+                         // TODO Implement mapping tournament and round names from
+                         // indexes to strings once the implementation of mapping
+                         // transactions has been completed.
+                         evt.push_back(Pair("id", (uint64_t) plEvent.nTournament));
+                         evt.push_back(Pair("round", (uint64_t) plEvent.nStage));
+
+                         evt.push_back(Pair("starting", (uint64_t) plEvent.nStartTime));
+
+                         UniValue teams(UniValue::VARR);
+
+                         UniValue home(UniValue::VOBJ);
+                         home.push_back(Pair("id", (uint64_t) plEvent.nHomeTeam));
+                         home.push_back(Pair("odds", (uint64_t) plEvent.nHomeOdds));
+                         teams.push_back(home);
+
+                         UniValue away(UniValue::VOBJ);
+                         away.push_back(Pair("id", (uint64_t) plEvent.nAwayTeam));
+                         away.push_back(Pair("odds", (uint64_t) plEvent.nAwayOdds));
+                         teams.push_back(away);
+
+                         // TODO Investigate whether a "draw" should be included as a
+                         // team. It may make more sense to name the parent property
+                         // "outcomes".
+                         UniValue draw(UniValue::VOBJ);
+                         draw.push_back(Pair("id", "Draw"));
+                         draw.push_back(Pair("odds", (uint64_t) plEvent.nDrawOdds));
+                         teams.push_back(draw);
+
+                         evt.push_back(Pair("teams", teams));
+
+                         ret.push_back(evt);
                     }
-                }
-            }
-
-            for (unsigned int i = 0; i < tx.vout.size(); i++) {
-                const CTxOut &txout = tx.vout[i];
-                std::string scriptPubKey = txout.scriptPubKey.ToString();
-
-                // TODO Remove hard-coded values from this block.
-                if( validEventTx && scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
-
-                    vector<unsigned char> v = ParseHex(scriptPubKey.substr(9, string::npos));
-                    std::string evtDescr(v.begin(), v.end());
-                    std::vector <std::string> strs;
-                    boost::split(strs, evtDescr, boost::is_any_of("|"));
-
-                    if (strs.size() != 11 || strs[0] != Params().EventTxType() ) {
-                        continue;
-                    }
-
-                    time_t time = (time_t) std::strtol(strs[3].c_str(), nullptr, 10);
-                    time_t currentTime = std::time(0);
-                    if (time < (currentTime - Params().BetPlaceTimeoutBlocks())) {
-                        continue;
-                    }
-
-                    printf("%s \n", evtDescr.c_str());
-
-                    // TODO Handle version field.
-
-                    UniValue evt(UniValue::VOBJ);
-
-                    evt.push_back(Pair("tx-id", txHash.ToString().c_str()));
-                    evt.push_back(Pair("id", strs[2]));
-                    evt.push_back(Pair("name", strs[4]));
-                    evt.push_back(Pair("round", strs[5]));
-                    evt.push_back(Pair("starting", strs[3]));
-
-                    UniValue teams(UniValue::VARR);
-                    for (unsigned int t = 6; t <= 8; t++) {
-                        UniValue team(UniValue::VOBJ);
-
-                        if (t < 8) {
-                            team.push_back(Pair("name", strs[t]));
-                            team.push_back(Pair("odds", strs[t + 2]));
-                        } else {
-                            team.push_back(Pair("name", "DRW"));
-                            team.push_back(Pair("odds", strs[t + 2]));
-                        }
-
-                        teams.push_back(team);
-                    }
-
-                    evt.push_back(Pair("teams", teams));
-                    ret.push_back(evt);
                 }
             }
         }
@@ -349,28 +326,24 @@ UniValue listbets(const UniValue& params, bool fHelp)
 
             for (unsigned int i = 0; i < (*pwtx).vout.size(); i++) {
                 const CTxOut& txout = (*pwtx).vout[i];
-                std::string s = txout.scriptPubKey.ToString();
+                std::string scriptPubKey = txout.scriptPubKey.ToString();
 
-                if (s.length() > 0) {
-                    // TODO Remove hard-coded values from this block.
-                    if (0 == strncmp(s.c_str(), "OP_RETURN", 9)) {
-                        vector<unsigned char> v = ParseHex(s.substr(9, string::npos));
-                        std::string betDescr(v.begin(), v.end());
-                        std::vector<std::string> strs;
-                        boost::split(strs, betDescr, boost::is_any_of("|"));
+                // TODO Remove hard-coded values from this block.
+                if ( scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
+                    vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
+                    std::string opCode(vOpCode.begin(), vOpCode.end());
 
-                        if (strs.size() != 4 || strs[0] != Params().BetTxType()) {
-                            continue;
-                        }
-
+                    CPeerlessBet plBet;
+                    if (CPeerlessBet::FromOpCode(opCode, plBet)) {
                         UniValue entry(UniValue::VOBJ);
                         entry.push_back(Pair("tx-id", txHash.ToString().c_str()));
-                        entry.push_back(Pair("event-id", strs[2]));
-                        entry.push_back(Pair("team-to-win", strs[3]));
+                        entry.push_back(Pair("event-id", (uint64_t) plBet.nEventId));
+                        entry.push_back(Pair("team-to-win", (uint64_t) plBet.nOutcome));
                         entry.push_back(Pair("amount", ValueFromAmount(txout.nValue)));
                         ret.push_back(entry);
                     }
                 }
+
             }
         }
 
@@ -594,7 +567,6 @@ UniValue getrawchangeaddress(const UniValue& params, bool fHelp)
     return CBitcoinAddress(keyID).ToString();
 }
 
-
 UniValue setaccount(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
@@ -737,15 +709,6 @@ void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew,
 
 UniValue placebet(const UniValue& params, bool fHelp)
 {
-    // TODO - remove hardcoded teams and events. Ideally would be provided by Oracle node.
-    // Used to validate users input to placebet RPC command.
-    std::vector<std::string> rd1EventIds = {"#000","#001","#002","#003","#004","#005","#006","#007","#008","#009","#010","#011","#012","#013","#014","#015",
-                                            "#016","#017","#018","#019","#020","#021","#022","#023","#024","#025","#026","#027","#028","#029","#030","#031",
-                                            "#032","#033","#034","#035","#036","#037","#038","#039","#040","#041","#042","#043","#044","#045","#046","#047",
-                                            "#048","#049","#050","#060","#061","#062","#063","#064","#065","#066","#067","#068","#069","#070"};
-    std::vector<std::string> rd1Teams = {"TES","DRW","ARG", "AUS", "BEL", "BRA", "COL", "CRC", "CRO", "DEN", "EGY", "ENG", "FRA", "GER", "ISL", "IRN", "JPN", "KOR",
-                                         "MEX", "MAR", "NGA","NIG", "PAN", "PER", "POL", "POR", "RUS", "KSA", "SEN", "SRB", "ESP", "SWE", "SUI", "TUN", "URU",};
-
     if (fHelp || params.size() < 3 || params.size() > 5)
         throw runtime_error(
             "placebet \"event-id\" \"team\" amount ( \"comment\" \"comment-to\" )\n"
@@ -754,8 +717,8 @@ UniValue placebet(const UniValue& params, bool fHelp)
             "\nPlace an amount as a bet on an event. The amount is rounded to the nearest 0.00000001\n" +
             HelpRequiringPassphrase() +
             "\nArguments:\n"
-            "1. \"event-id\"    (string, required) The event to bet on (Must be 4 characters in length e.g. \"#000\").\n"
-            "2. \"team\"        (string, required) The team to win.(Must be 3 character team abbreviation e.g for Russia: \"RUS\". Or for a draw: \"DRW\" ) \n"
+            "1. \"event-id\"    (numeric, required) The event to bet on.\n"
+            "2. \"team\"        (numeric, required) The team to win.\n"
             "3. \"amount\"      (numeric, required) The amount in wgr to send. eg 0.1\n"
             "3. \"comment\"     (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
@@ -771,7 +734,7 @@ UniValue placebet(const UniValue& params, bool fHelp)
     CAmount nAmount = AmountFromValue(params[2]);
 
     // Validate bet amount so its between 1 - 10000 WGR inclusive.
-    if( nAmount < (50 * COIN ) || nAmount > (10000 * COIN)){
+    if (nAmount < (50 * COIN ) || nAmount > (10000 * COIN)) {
         throw JSONRPCError(RPC_BET_DETAILS_ERROR, "Error: Incorrect bet amount. Please ensure your bet is beteen 1 - 10000 WGR inclusive.");
     }
 
@@ -786,13 +749,13 @@ UniValue placebet(const UniValue& params, bool fHelp)
     EnsureEnoughWagerr(nAmount);
 
     CBitcoinAddress address("");
-    std::string eventId = params[0].get_str();
-    std::string team = params[1].get_str();
+    int eventId = params[0].get_int();
+    int outcome = params[1].get_int();
+    CPeerlessBet plBet(eventId, (OutcomeType) outcome);
 
-//    if(std::find(rd1Teams.begin(),rd1Teams.end(), team) == rd1Teams.end() || std::find(rd1EventIds.begin(),rd1EventIds.end(),eventId) == rd1EventIds.end()){
-//
-//        throw JSONRPCError(RPC_BET_DETAILS_ERROR, "Error: Incorrect bet details. Please ensure your team and event are correct.");
-//    }
+    // TODO Retrieve the `CPeerlessEvent` currently associated with `eventId`
+    // and confirm that the submitted `team` is available; `throw` an
+    // `RPC_BET_DETAILS_ERROR` in the case of a mismatch.
 
     // TODO `address` isn't used when adding the following transaction to the
     // blockchain, so ideally it would not need to be supplied to `SendMoney`.
@@ -802,7 +765,9 @@ UniValue placebet(const UniValue& params, bool fHelp)
     // Note that, during testing, the `opReturn` value is added to the
     // blockchain incorrectly if its length is less than 5. This behaviour would
     // ideally be investigated and corrected/justified when time allows.
-    SendMoney(address.Get(), nAmount, wtx, false, "2|1.0|" + eventId + "|" + team);
+    std::string opCode;
+    plBet.ToOpCode(plBet, opCode);
+    SendMoney(address.Get(), nAmount, wtx, false, opCode);
 
     return wtx.GetHash().GetHex();
 }
