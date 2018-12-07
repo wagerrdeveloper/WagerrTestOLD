@@ -30,6 +30,7 @@
 #include "primitives/deterministicmint.h"
 #include <boost/assign/list_of.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/algorithm/hex.hpp>
 
 #include <univalue.h>
 
@@ -42,7 +43,7 @@ using namespace boost::assign;
 // allows.
 UniValue listevents(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() > 0))
+    if (fHelp || (params.size() > 1))
         throw runtime_error(
             "listevents\n"
             "\nGet live Wagerr events.\n"
@@ -67,92 +68,86 @@ UniValue listevents(const UniValue& params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("listevents", "") + HelpExampleRpc("listevents", ""));
 
+    CEventDB edb;
+    eventIndex_t eventsIndex;
+    edb.GetEvents(eventsIndex);
+
+    mappingIndex_t sportsIndex;
+    CMappingDB msdb("sports.dat");
+    msdb.GetSports(sportsIndex);
+
+    mappingIndex_t roundsIndex;
+    CMappingDB mrdb("rounds.dat");
+    mrdb.GetRounds(roundsIndex);
+
+    mappingIndex_t teamsIndex;
+    CMappingDB mtdb("teams.dat");
+    mtdb.GetTeams(teamsIndex);
+
+    mappingIndex_t tournamentsIndex;
+    CMappingDB mtodb("tournaments.dat");
+    mtodb.GetTournaments(tournamentsIndex);
+
+    string sportFilter = "";
+
+    if (params.size() >= 1) {
+        sportFilter = params[0].get_str();
+    }
+
+    // Check the events index actually has events,
+    if (eventsIndex.size() < 1) {
+        throw runtime_error("Currently no events to list.");
+    }
+
     UniValue ret(UniValue::VARR);
-    
-    // Set the Oracle wallet address. 
-    std::string OracleWalletAddr = Params().OracleWalletAddr();
 
-    // TODO We currently search the entire block chain every time we query the
-    // current events. Instead, the events up to a particular block/transaction
-    // should be read and cached when the process starts, and ideally persisted,
-    // to reduce the processing time for this command.
-    CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
+    map<uint32_t, CPeerlessEvent>::iterator it;
+    for (it = eventsIndex.begin(); it != eventsIndex.end(); it++) {
 
-    while (pindex) {
-        CBlock block;
-        ReadBlockFromDisk(block, pindex);
+        CPeerlessEvent plEvent = it->second;
+        std::string sport = sportsIndex.find(plEvent.nSport)->second.sName;
 
-        BOOST_FOREACH (CTransaction& tx, block.vtx) {
-            uint256 txHash = tx.GetHash();
-
-            // Ensure the event TX has come from Oracle wallet.
-            const CTxIn &txin = tx.vin[0];
-            bool validEventTx = IsValidOracleTx(txin);
-
-            if (validEventTx) {
-                // loop over all the TX vouts to check them for OP_RETURN.
-                for (unsigned int i = 0; i < tx.vout.size(); i++) {
-                    const CTxOut &txout = tx.vout[i];
-                    std::string scriptPubKey = txout.scriptPubKey.ToString();
-
-                    if(scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
-
-                         std::vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
-                         std::string OpCode(vOpCode.begin(), vOpCode.end());
-
-                         CPeerlessEvent plEvent;
-                         if (!CPeerlessEvent::FromOpCode(OpCode, plEvent)) {
-                             continue;
-                         }
-
-                         time_t time = plEvent.nStartTime;
-                         time_t currentTime = std::time(0);
-                         if (time < (currentTime - Params().BetPlaceTimeoutBlocks())) {
-                             continue;
-                         }
-
-                         UniValue evt( UniValue::VOBJ );
-
-                         evt.push_back(Pair("tx-id", txHash.ToString().c_str()));
-                         evt.push_back(Pair("id", (uint64_t) plEvent.nEventId));
-
-                         // TODO Implement mapping tournament and round names from
-                         // indexes to strings once the implementation of mapping
-                         // transactions has been completed.
-                         evt.push_back(Pair("id", (uint64_t) plEvent.nTournament));
-                         evt.push_back(Pair("round", (uint64_t) plEvent.nStage));
-
-                         evt.push_back(Pair("starting", (uint64_t) plEvent.nStartTime));
-
-                         UniValue teams(UniValue::VARR);
-
-                         UniValue home(UniValue::VOBJ);
-                         home.push_back(Pair("id", (uint64_t) plEvent.nHomeTeam));
-                         home.push_back(Pair("odds", (uint64_t) plEvent.nHomeOdds));
-                         teams.push_back(home);
-
-                         UniValue away(UniValue::VOBJ);
-                         away.push_back(Pair("id", (uint64_t) plEvent.nAwayTeam));
-                         away.push_back(Pair("odds", (uint64_t) plEvent.nAwayOdds));
-                         teams.push_back(away);
-
-                         // TODO Investigate whether a "draw" should be included as a
-                         // team. It may make more sense to name the parent property
-                         // "outcomes".
-                         UniValue draw(UniValue::VOBJ);
-                         draw.push_back(Pair("id", "Draw"));
-                         draw.push_back(Pair("odds", (uint64_t) plEvent.nDrawOdds));
-                         teams.push_back(draw);
-
-                         evt.push_back(Pair("teams", teams));
-
-                         ret.push_back(evt);
-                    }
-                }
-            }
+        if (params.size() > 0 && sportFilter != sport) {
+            continue;
         }
 
-        pindex = chainActive.Next(pindex);
+        std::string round      = roundsIndex.find(plEvent.nStage)->second.sName;
+        std::string tournament = tournamentsIndex.find(plEvent.nTournament)->second.sName;
+        std::string homeTeam   = teamsIndex.find(plEvent.nHomeTeam)->second.sName;
+        std::string awayTeam   = teamsIndex.find(plEvent.nAwayTeam)->second.sName;
+
+        UniValue evt(UniValue::VOBJ);
+
+        evt.push_back(Pair("event-id", (uint64_t) plEvent.nEventId));
+        evt.push_back(Pair("sport", sport));
+        evt.push_back(Pair("tournament", tournament));
+        evt.push_back(Pair("round", ""));
+
+        evt.push_back(Pair("starting", (uint64_t) plEvent.nStartTime));
+
+        UniValue teams(UniValue::VARR);
+
+        UniValue home(UniValue::VOBJ);
+        home.push_back(Pair("name", homeTeam));
+        home.push_back(Pair("odds", (uint64_t) plEvent.nHomeOdds));
+        teams.push_back(home);
+
+        UniValue away(UniValue::VOBJ);
+        away.push_back(Pair("name",  awayTeam));
+        away.push_back(Pair("odds", (uint64_t) plEvent.nAwayOdds));
+        teams.push_back(away);
+
+        // TODO Investigate whether a "draw" should be included as a
+        // team. It may make more sense to name the parent property
+        // "outcomes".
+        UniValue draw(UniValue::VOBJ);
+        draw.push_back(Pair("id", "Draw"));
+        draw.push_back(Pair("odds", (uint64_t) plEvent.nDrawOdds));
+        teams.push_back(draw);
+
+        evt.push_back(Pair("teams", teams));
+
+        ret.push_back(evt);
     }
 
     return ret;
@@ -179,38 +174,35 @@ UniValue listchaingamesevents(const UniValue& params, bool fHelp)
             HelpExampleCli("listchaingamesevents", "") + HelpExampleRpc("listchaingamesevents", ""));
 
     UniValue ret(UniValue::VARR);
+    
+    //CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
+    CBlockIndex *BlocksIndex = NULL;
+    BlocksIndex = chainActive[chainActive.Height() - 14400];
 
-    // Set the Oracle wallet address. 
-    std::string OracleWalletAddr = Params().OracleWalletAddr();
-    CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
-
-    while (pindex) {
+    while (BlocksIndex) {
         CBlock block;
-        ReadBlockFromDisk(block, pindex);
+        ReadBlockFromDisk(block, BlocksIndex);
 
         BOOST_FOREACH (CTransaction& tx, block.vtx) {
             uint256 txHash = tx.GetHash();
-
-            // Ensure the event TX has come from Oracle wallet.
+            
             const CTxIn &txin = tx.vin[0];
-            bool validEventTx = IsValidOracleTx(txin);
+            bool validTx = IsValidOracleTx(txin); 
+            
+            // Check each TX out for values
+            for (unsigned int i = 0; i < tx.vout.size(); i++) {
+                const CTxOut &txout = tx.vout[i];
+                std::string scriptPubKey = txout.scriptPubKey.ToString();
 
-            if (validEventTx) {
-                // loop over all the TX vouts to check them for OP_RETURN.
-                for (unsigned int i = 0; i < tx.vout.size(); i++) {
-                    const CTxOut &txout = tx.vout[i];
-                    std::string scriptPubKey = txout.scriptPubKey.ToString();
+                // Find OP_RETURN transactions
+                if(scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
 
-                    if (scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
+                    std::vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
+                    std::string OpCode(vOpCode.begin(), vOpCode.end());
 
-                        std::vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
-                        std::string OpCode(vOpCode.begin(), vOpCode.end());
-
-                        CChainGamesEvent cgEvent;
-                        if (!CChainGamesEvent::FromOpCode(OpCode, cgEvent)) {
-                            continue;
-                        }
-
+                    // Find any CChainGameEvents matching the specified id
+                    CChainGamesEvent cgEvent;
+                    if (validTx && CChainGamesEvent::FromOpCode(OpCode, cgEvent)) {
                         UniValue evt(UniValue::VOBJ);
                         evt.push_back(Pair("tx-id", txHash.ToString().c_str()));
                         evt.push_back(Pair("event-id", (uint64_t) cgEvent.nEventId));
@@ -221,7 +213,7 @@ UniValue listchaingamesevents(const UniValue& params, bool fHelp)
             }
         }
 
-        pindex = chainActive.Next(pindex);
+        BlocksIndex = chainActive.Next(BlocksIndex);
     }
 
     return ret;
@@ -294,7 +286,7 @@ UniValue listbets(const UniValue& params, bool fHelp)
                 std::string scriptPubKey = txout.scriptPubKey.ToString();
 
                 // TODO Remove hard-coded values from this block.
-                if ( scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
+                if (scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
                     vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
                     std::string opCode(vOpCode.begin(), vOpCode.end());
 
@@ -340,7 +332,7 @@ UniValue listbets(const UniValue& params, bool fHelp)
     return ret;
 }
 
-UniValue listchaingamebets(const UniValue& params, bool fHelp)
+UniValue listchaingamesbets(const UniValue& params, bool fHelp)
 {
     // TODO The command-line parameters for this command aren't handled as.
     // described, either the documentation or the behaviour of this command
@@ -413,7 +405,6 @@ UniValue listchaingamebets(const UniValue& params, bool fHelp)
                         UniValue entry(UniValue::VOBJ);
                         entry.push_back(Pair("tx-id", txHash.ToString().c_str()));
                         entry.push_back(Pair("event-id", (uint64_t) cgBet.nEventId));
-                        //entry.push_back(Pair("team-to-win", (uint64_t) plBet.nOutcome));
                         entry.push_back(Pair("amount", ValueFromAmount(txout.nValue)));
                         ret.push_back(entry);
                     }
@@ -841,7 +832,14 @@ UniValue placebet(const UniValue& params, bool fHelp)
     // ideally be investigated and corrected/justified when time allows.
     std::string opCode;
     CPeerlessBet::ToOpCode(plBet, opCode);
-    SendMoney(address.Get(), nAmount, wtx, false, opCode);
+    
+    // Unhex the validated bet opcode
+    vector<unsigned char> vectorValue;
+    string stringValue(opCode);
+    boost::algorithm::unhex(stringValue, back_inserter(vectorValue));
+    std::string unHexedOpCode(vectorValue.begin(), vectorValue.end());
+
+    SendMoney(address.Get(), nAmount, wtx, false, unHexedOpCode);
 
     return wtx.GetHash().GetHex();
 }
@@ -892,10 +890,96 @@ UniValue placechaingamesbet(const UniValue& params, bool fHelp)
     std::string opCode;
     CChainGamesBet::ToOpCode(cgBet, opCode);
 
+    // Unhex the validated bet opcode
+    vector<unsigned char> vectorValue;
+    boost::algorithm::unhex(opCode, back_inserter(vectorValue));
+    std::string unHexedOpCode(vectorValue.begin(), vectorValue.end());
+
     // Process transaction
-    SendMoney(address.Get(), nAmount, wtx, false, opCode);
+    SendMoney(address.Get(), nAmount, wtx, false, unHexedOpCode);
 
     return wtx.GetHash().GetHex();
+}
+
+/**
+ * Looks up a chain game info for a given ID.
+ *
+ * @param params The RPC params consisting of the event id.
+ * @param fHelp  Help text
+ * @return
+ */
+UniValue getchaingamesinfo(const UniValue& params, bool fHelp)
+{
+    UniValue ret(UniValue::VARR);
+    UniValue obj(UniValue::VOBJ);
+
+    // Set default return values
+    unsigned int eventID = params[0].get_int();
+    int entryFee = 0;
+    int totalFoundCGBets = 0;
+    int gameStartTime = 0;
+    int gameStartBlock = 0;
+
+    //CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
+    CBlockIndex *BlocksIndex = NULL;
+    BlocksIndex = chainActive[chainActive.Height() - 14400];
+
+    while (BlocksIndex) {
+        CBlock block;
+        ReadBlockFromDisk(block, BlocksIndex);
+
+        BOOST_FOREACH (CTransaction& tx, block.vtx) {
+            uint256 txHash = tx.GetHash();
+            
+            const CTxIn &txin = tx.vin[0];
+            bool validTx = IsValidOracleTx(txin);
+
+            // Check each TX out for values
+            for (unsigned int i = 0; i < tx.vout.size(); i++) {
+                const CTxOut &txout = tx.vout[i];
+                std::string scriptPubKey = txout.scriptPubKey.ToString();
+
+                // Find OP_RETURN transactions
+                if(scriptPubKey.length() > 0 && strncmp(scriptPubKey.c_str(), "OP_RETURN", 9) == 0) {
+
+                    std::vector<unsigned char> vOpCode = ParseHex(scriptPubKey.substr(9, string::npos));
+                    std::string OpCode(vOpCode.begin(), vOpCode.end());
+
+                    // Find any CChainGameEvents matching the specified id
+                    CChainGamesEvent cgEvent;
+                    if (validTx && CChainGamesEvent::FromOpCode(OpCode, cgEvent)) {
+                        if (((unsigned int)cgEvent.nEventId) == eventID){
+                            entryFee = cgEvent.nEntryFee;
+                            gameStartTime = block.GetBlockTime();
+                            gameStartBlock = BlocksIndex -> nHeight;
+                        }
+                    }
+
+                    CChainGamesBet cgBet;
+                    if (!CChainGamesBet::FromOpCode(OpCode, cgBet)) {
+                        continue;
+                    }
+
+                    if (((unsigned int)cgBet.nEventId) == eventID){
+                        totalFoundCGBets = totalFoundCGBets + 1;
+                    }
+                    
+                }
+            }
+        }
+
+        BlocksIndex = chainActive.Next(BlocksIndex);
+    }
+
+    int potSize = totalFoundCGBets*entryFee;
+
+    obj.push_back(Pair("pot-size", potSize));
+    obj.push_back(Pair("entry-fee", entryFee));
+    obj.push_back(Pair("start-block", gameStartBlock));
+    obj.push_back(Pair("start-time", gameStartTime));
+    obj.push_back(Pair("total-bets", totalFoundCGBets));
+
+    return obj;
 }
 
 UniValue sendtoaddress(const UniValue& params, bool fHelp)
