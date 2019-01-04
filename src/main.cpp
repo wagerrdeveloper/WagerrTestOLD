@@ -4398,6 +4398,43 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                         eiUpdated = true;
                     }
 
+                    CPeerlessBet plBet;
+                    if (CPeerlessTotalsEvent::FromOpCode(opCode, plBet)) {
+                        int betAmount = txout;
+
+                        CEventDB edb;
+                        eventIndex_t eventsIndex;
+                        edb.GetEvents(eventsIndex);
+
+                        // Check the events index actually has events,
+                        if (eventsIndex.size() < 1) {
+                            
+                            for (it = eventsIndex.begin(); it != eventsIndex.end(); it++) {
+
+                                CPeerlessEvent plEvent = it->second;
+                                CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)
+
+                                if (plBet.nOutcome == moneyLineWin){
+                                    ple.nMoneyLineHomeBets += betAmount;
+                                }if (plBet.nOutcome == moneyLineLose){
+                                    ple.nMoneyLineAwayBets += betAmount;
+                                }if (plBet.nOutcome == moneyLineDraw){
+                                    ple.nMoneyLineDrawBets += betAmount;
+                                }if (plBet.nOutcome == spreadOver){
+                                    ple.nSpreadOverBets += betAmount;
+                                }if (plBet.nOutcome == spreadUnder){
+                                    ple.nSpreadUnderBets += betAmount;
+                                }if (plBet.nOutcome == totalOver){
+                                    ple.nTotalsOverBets += betAmount;
+                                }if (plBet.nOutcome == totalUnder){
+                                    ple.nTotalsUnderBets += betAmount;
+                                }
+                                
+                                eiUpdated = true;
+                            }
+                        }
+                    }
+
                     // If mapping found then add it to the relating map index and write the map index to disk.
                     CMapping cMapping;
                     if (CMapping::FromOpCode(opCode, cMapping)) {

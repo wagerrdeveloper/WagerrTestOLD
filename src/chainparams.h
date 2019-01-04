@@ -143,6 +143,7 @@ public:
     int MaxBetPayoutRange() const { return nMaxBetPayoutRange; }
     int MinBetPayoutRange() const { return nMinBetPayoutRange; }
     int BetPlaceTimeoutBlocks() const { return nBetPlaceTimeoutBlocks; }
+    int BetLiabilityThreshold() const { return nBetLiabilityThreshold; }
 protected:
     CChainParams() {}
 
@@ -221,6 +222,7 @@ protected:
     int nMinBetPayoutRange;
     int nMaxBetPayoutRange;
     int nBetPlaceTimeoutBlocks;
+    int nBetLiabilityThreshold;
 };
 
 /**

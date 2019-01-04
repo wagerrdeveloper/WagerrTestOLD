@@ -297,6 +297,17 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nTotalOverOdds   = 0;
     pe.nTotalUnderOdds  = 0;
 
+    // Set default values for the spread, moneyline and totals bet accumulators
+    pe.nMoneyLineHomeBets   = 0; 
+    pe.nMoneyLineAwayBets   = 0;
+    pe.nMoneyLineDrawBets   = 0;
+    pe.nSpreadsPointsBets   = 0;
+    pe.nSpreadsOverBets     = 0;
+    pe.nSpreadsUnderBets    = 0;
+    pe.nTotalsPointsBets    = 0;
+    pe.nTotalsOverBets      = 0;
+    pe.nTotalsUnderBets     = 0;
+
     return true;
 }
 

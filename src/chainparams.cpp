@@ -172,8 +172,8 @@ public:
         nBetBlockPayoutAmount = 1440;                                   // Set the number of blocks we want to look back for results already paid out.
         nMinBetPayoutRange = 50;                                        // Spam filter to prevent malicious actors congesting the chain (Only payout bets that are between 50 - 10000 WRG inclusive).
         nMaxBetPayoutRange = 10000;                                     // Minimizes maximum payout size to avoid unnecessary large numbers (Only payout bets that are between 50 - 10000 WRG inclusive).
+        nBetLiabilityThreshold = 1000;                                  // The maximum amount allowed to be bet on a single event (Event will be removed after this point)
         nBetPlaceTimeoutBlocks = 120;                                   // Discard bets placed less than 120 seconds (approx. 2 mins) before event start time
-
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
          * be spent as it did not originally exist in the database.
@@ -313,6 +313,7 @@ public:
         nBetBlockPayoutAmount = 1440;                                   // Set the number of blocks we want to look back for results already paid out.
         nMinBetPayoutRange = 50;                                        // Spam filter to prevent malicious actors congesting the chain (Only payout bets that are between 50 - 10000 WRG inclusive).
         nMaxBetPayoutRange = 10000;                                     // Minimizes maximum payout size to avoid unnecessary large numbers (Only payout bets that are between 50 - 10000 WRG inclusive).
+        nBetLiabilityThreshold = 1000000;                               // The maximum amount allowed to be bet on a single event (Event will be removed after this point)
         nBetPlaceTimeoutBlocks = 120;                                   // Discard bets placed less than 120 seconds (approx. 2 mins) before event start time,
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
