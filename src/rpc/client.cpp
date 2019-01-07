@@ -44,7 +44,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"placechaingamesbet", 2},
         {"getchaingamesinfo", 0},
         {"getchaingamesinfo", 1},
-        {"geteventsoverliability", 0},
+        {"geteventsliability", 0},
         {"sendtoaddress", 1},
         {"sendtoaddressix", 1},
         {"settxfee", 0},

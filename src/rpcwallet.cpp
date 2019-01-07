@@ -1019,12 +1019,12 @@ UniValue getchaingamesinfo(const UniValue& params, bool fHelp)
  * @param fHelp  Help text
  * @return
  */
-UniValue geteventsoverliability(const UniValue& params, bool fHelp)
+UniValue geteventsliability(const UniValue& params, bool fHelp)
 {
   if (fHelp || (params.size() >= 1))
         throw runtime_error(
             "geteventtotals\n"
-            "Return event payout that exceed the liability threshold.\n"
+            "Return the payout of each event.\n"
 
             "\nResult:\n"
             "[\n"
@@ -1036,9 +1036,10 @@ UniValue geteventsoverliability(const UniValue& params, bool fHelp)
             "    \"moneyline-draw-payout\": n,\n"
             "    \"spread-over-payout\": n,\n"
             "    \"spread-under-payout\": n,\n"
-            "    \"totals-points-payout\": n,\n"
+            "    \"spread-points-payout\": n,\n"
             "    \"totals-over-payout\": n,\n"
             "    \"totals-under-payout\": n,\n"
+            "    \"totals-points-payout\": n,\n"
             "    ]\n"
             "  }\n"
             "]\n"
@@ -1056,99 +1057,60 @@ UniValue geteventsoverliability(const UniValue& params, bool fHelp)
     } 
 
     UniValue ret(UniValue::VARR);
-    UniValue events(UniValue::VARR);
 
     map<uint32_t, CPeerlessEvent>::iterator it;
     for (it = eventsIndex.begin(); it != eventsIndex.end(); it++) {
 
         CPeerlessEvent plEvent = it->second;
 
-        bool hasMoneyline = false;
-        bool hasSpreads = false;
-        bool hasTotals = false;
-
         UniValue event(UniValue::VOBJ);
-        UniValue moneyline(UniValue::VOBJ);
-        UniValue spreads(UniValue::VOBJ);
-        UniValue totals(UniValue::VOBJ);
-
-        event.push_back(Pair("event-id", (uint64_t) plEvent.nEventId));
+        event.push_back(Pair("event-id", (int) plEvent.nEventId));
 
         // Calculate the expected payout for each event type
-        int mlHomeWinPayout = (uint64_t) plEvent.nMoneyLineHomeBets * plEvent.nHomeOdds;
-        if (mlHomeWinPayout >= Params().BetLiabilityThreshold()){
-            LogPrintf("Moneyline is over liability threshold i% / thesh: i%", mlHomeWinPayout, Params().BetLiabilityThreshold());
-            moneyline.push_back(Pair("moneyline-home-payout", mlHomeWinPayout));
-            hasMoneyline = true;
+        if (plEvent.nHomeOdds != 0){
+            event.push_back(Pair("moneyline-home-potential-liability", (int) plEvent.nMoneyLineHomePotentialLiability));
+        }else{
+            LogPrintf("Home odds are 0, skipped")
         }
 
-        int mlAwayWinPayout = (uint64_t) plEvent.nMoneyLineAwayBets * plEvent.nAwayOdds;
-        if (mlAwayWinPayout >= Params().BetLiabilityThreshold()){
-            moneyline.push_back(Pair("moneyline-away-payout", mlAwayWinPayout));
-            hasMoneyline = true;
+        if (plEvent.nAwayOdds != 0){
+            event.push_back(Pair("moneyline-away-potential-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
+        }else{
+            LogPrintf("Away odds are 0, skipped")
         }
 
-        int mlDrawPayout = (uint64_t) plEvent.nMoneyLineDrawBets * plEvent.nDrawOdds;
-        if (mlDrawPayout >= Params().BetLiabilityThreshold()){
-            moneyline.push_back(Pair("moneyline-draw-payout", mlDrawPayout));
-            hasMoneyline = true;
+        if (plEvent.nDrawOdds != 0){
+            event.push_back(Pair("moneyline-draw-potential-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
+        }else{
+            LogPrintf("Draw odds are 0, skipped")
         }
 
-        int sdPointsPayout = (uint64_t) plEvent.nSpreadPointsBets * plEvent.nSpreadPoints;
-        if (sdPointsPayout >= Params().BetLiabilityThreshold()){
-            spreads.push_back(Pair("spreads-over-payout", sdPointsPayout));
-            hasSpreads = true;
+        if (plEvent.nSpreadOverOdds != 0){
+            event.push_back(Pair("spreads-over-potential-liability", (int) plEvent.nSpreadOverPotentialLiability));
         }
 
-        int sdOverPayout = (uint64_t) plEvent.nSpreadOverBets * plEvent.nSpreadOverOdds;
-        if (sdOverPayout >= Params().BetLiabilityThreshold()){
-            spreads.push_back(Pair("spreads-over-payout", sdOverPayout));
-            hasSpreads = true;
+        if (plEvent.nSpreadUnderOdds != 0){
+            event.push_back(Pair("spreads-under-potential-liability", (int) plEvent.nSpreadUnderPotentialLiability));
         }
 
-        int sdUnderPayout = (uint64_t) plEvent.nSpreadUnderBets * plEvent.nSpreadUnderOdds;
-        if (sdUnderPayout >= Params().BetLiabilityThreshold()){
-            spreads.push_back(Pair("spreads-under-payout", sdUnderPayout));
-            hasSpreads = true;
+        if (plEvent.nSpreadPoints != 0){
+            event.push_back(Pair("spreads-push-potential-liability", (int) plEvent.nSpreadPushPotentialLiability));
         }
 
-        int tlPointsPayout = (uint64_t) plEvent.nTotalPointsBets * plEvent.nTotalPoints;
-        if (tlPointsPayout >= Params().BetLiabilityThreshold()){
-            totals.push_back(Pair("total-points-payout", tlPointsPayout));
-            hasTotals = true;
+        if (plEvent.nTotalOverOdds != 0){
+            event.push_back(Pair("total-over-potential-liability", (int) plEvent.nTotalOverPotentialLiability));
         }
 
-        int tlOverPayout = (uint64_t) plEvent.nTotalOverBets * plEvent.nTotalOverOdds;
-        if (tlOverPayout >= Params().BetLiabilityThreshold()){
-            totals.push_back(Pair("total-over-payout", tlOverPayout));
-            hasTotals = true;
+        if (plEvent.nTotalUnderOdds != 0){
+            event.push_back(Pair("total-under-potential-liability", (int) plEvent.nTotalUnderPotentialLiability));
         }
 
-        int tlUnderPayout = (uint64_t) plEvent.nTotalUnderBets * plEvent.nTotalUnderOdds;
-        if (tlUnderPayout >= Params().BetLiabilityThreshold()){
-            totals.push_back(Pair("total-under-payout", tlUnderPayout));
-            hasTotals = true;
-        }
-            
-        // Only return events whose payout currently exceeds the liability threshold
-        if (hasMoneyline) {
-            event.push_back(moneyline);
+        if (plEvent.nTotalPoints != 0){
+            event.push_back(Pair("total-push-potential-liability", (int) plEvent.nTotalPushPotentialLiability));
         }
 
-        if (hasSpreads) {
-            event.push_back(spreads);
-        }
-
-        if (hasTotals) {
-            event.push_back(totals);
-        }
-
-        if (hasTotals || hasSpreads || hasTotals) {
-            events.push_back(event);
-        }
+        ret.push_back(event);
     }
-
-    ret.push_back(events);
 
     return ret;
 }

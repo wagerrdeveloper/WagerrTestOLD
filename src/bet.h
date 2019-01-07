@@ -82,15 +82,24 @@ public:
     uint32_t nTotalPoints;
     uint32_t nTotalOverOdds;
     uint32_t nTotalUnderOdds;
+    uint32_t nMoneyLineHomePotentialLiability;
+    uint32_t nMoneyLineAwayPotentialLiability;
+    uint32_t nMoneyLineDrawPotentialLiability;
+    uint32_t nSpreadOverPotentialLiability;
+    uint32_t nSpreadUnderPotentialLiability;
+    uint32_t nSpreadPushPotentialLiability;
+    uint32_t nTotalOverPotentialLiability;
+    uint32_t nTotalUnderPotentialLiability;
+    uint32_t nTotalPushPotentialLiability;
     uint32_t nMoneyLineHomeBets;
     uint32_t nMoneyLineAwayBets;
     uint32_t nMoneyLineDrawBets;
-    uint32_t nSpreadPointsBets;
     uint32_t nSpreadOverBets;
     uint32_t nSpreadUnderBets;
-    uint32_t nTotalPointsBets;
+    uint32_t nSpreadPushBets;
     uint32_t nTotalOverBets;
     uint32_t nTotalUnderBets;
+    uint32_t nTotalPushBets;
 
     // Default Constructor.
     CPeerlessEvent() {}
@@ -120,15 +129,24 @@ public:
         READWRITE(nTotalPoints);
         READWRITE(nTotalOverOdds);
         READWRITE(nTotalUnderOdds);
+        READWRITE(nMoneyLineHomePotentialLiability);
+        READWRITE(nMoneyLineAwayPotentialLiability);
+        READWRITE(nMoneyLineDrawPotentialLiability);
+        READWRITE(nSpreadOverPotentialLiability);
+        READWRITE(nSpreadUnderPotentialLiability);
+        READWRITE(nSpreadPushPotentialLiability);
+        READWRITE(nTotalOverPotentialLiability);
+        READWRITE(nTotalUnderPotentialLiability);
+        READWRITE(nTotalPushPotentialLiability);
         READWRITE(nMoneyLineHomeBets);
         READWRITE(nMoneyLineAwayBets);
-        READWRITE(nMoneyLineDrawBets);
-        READWRITE(nSpreadPointsBets);
+        READWRITE(nMoneyLineDrawBets);     
         READWRITE(nSpreadOverBets);
         READWRITE(nSpreadUnderBets);
-        READWRITE(nTotalPointsBets);
+        READWRITE(nSpreadPushBets);
         READWRITE(nTotalOverBets);
-        READWRITE(nTotalUnderBets);
+        READWRITE(nTotalUnderBets); 
+        READWRITE(nTotalPushBets);
     }
 };
 

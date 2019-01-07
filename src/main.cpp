@@ -4406,26 +4406,56 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                         eventIndex_t eventsIndex;
                         edb.GetEvents(eventsIndex);
 
-                        // Check the events index actually has events,
-                        if (eventsIndex.size() < 1) {
+                        unsigned int oddsDivisor  = Params().OddsDivisor();
+                        unsigned int betXPermille = Params().BetXPermille();
+
+                        // Check the events index actually has events
+                        if (eventsIndex.size() > 0) {
                         
                             CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)->second;
 
                             if (plBet.nOutcome == moneyLineWin){
-                                ple.nMoneyLineHomeBets += betAmount;
-                                LogPrintf("@Moneyline home bet found, added to accumulator: i%", ple.nMoneyLineHomeBets);
+                                int winnings = betAmount * plEvent.nHomeOdds;
+                                ple.nMoneyLineHomePotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nMoneyLineHomeBets += 1;
+                                LogPrintf("@EventId no: i%", plBet.nEventId);
+                                LogPrintf("@winnings: i%", winnings);
+                                LogPrintf("@nMoneyLineHomeBets no: i%", ple.nMoneyLineHomeBets);
+                                LogPrintf("@PL: i%", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                LogPrintf("@nMoneyLineHomePotentialLiability: i%", ple.nMoneyLineHomePotentialLiability);
                             }if (plBet.nOutcome == moneyLineLose){
-                                ple.nMoneyLineAwayBets += betAmount;
+                                int winnings = betAmount * plEvent.nAwayOdds;
+                                ple.nMoneyLineHomePotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nMoneyLineAwayPotentialLiability += betAmount * plEvent.nAwayOdds;
+                                ple.nMoneyLineAwayBets += 1;
                             }if (plBet.nOutcome == moneyLineDraw){
-                                ple.nMoneyLineDrawBets += betAmount;
+                                int winnings = betAmount * plEvent.nDrawOdds;
+                                ple.nMoneyLineDrawPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nMoneyLineDrawBets += 1;
                             }if (plBet.nOutcome == spreadOver){
-                                ple.nSpreadOverBets += betAmount;
+                                int winnings = betAmount * plEvent.nSpreadOverOdds;
+                                ple.nSpreadOverPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nSpreadPushPotentialLiability += betAmount;
+                                ple.nSpreadOverBets += 1;
+                                ple.nSpreadPushBets += 1;
                             }if (plBet.nOutcome == spreadUnder){
-                                ple.nSpreadUnderBets += betAmount;
+                                int winnings = betAmount * plEvent.nSpreadUnderOdds;
+                                ple.nSpreadUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nSpreadPushPotentialLiability += betAmount;
+                                ple.nSpreadUnderBets += 1;
+                                ple.nSpreadPushBets += 1;
                             }if (plBet.nOutcome == totalOver){
-                                ple.nTotalOverBets += betAmount;
+                                int winnings = betAmount * plEvent.nTotalOverOdds;
+                                ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nTotalPushPotentialLiability += betAmount;
+                                ple.nTotalOverBets += 1;
+                                ple.nTotalPushBets += 1;
                             }if (plBet.nOutcome == totalUnder){
-                                ple.nTotalUnderBets += betAmount;
+                                int winnings = betAmount * plEvent.nTotalUnderOdds;
+                                ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+                                ple.nTotalPushPotentialLiability += betAmount;
+                                ple.nTotalUnderBets += 1;
+                                ple.nTotalPushBets += 1;
                             }
                             
                             eiUpdated = true;
