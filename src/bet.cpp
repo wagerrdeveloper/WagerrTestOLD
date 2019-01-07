@@ -301,12 +301,12 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nMoneyLineHomeBets   = 0; 
     pe.nMoneyLineAwayBets   = 0;
     pe.nMoneyLineDrawBets   = 0;
-    pe.nSpreadsPointsBets   = 0;
-    pe.nSpreadsOverBets     = 0;
-    pe.nSpreadsUnderBets    = 0;
-    pe.nTotalsPointsBets    = 0;
-    pe.nTotalsOverBets      = 0;
-    pe.nTotalsUnderBets     = 0;
+    pe.nSpreadPointsBets   = 0;
+    pe.nSpreadOverBets     = 0;
+    pe.nSpreadUnderBets    = 0;
+    pe.nTotalPointsBets    = 0;
+    pe.nTotalOverBets      = 0;
+    pe.nTotalUnderBets     = 0;
 
     return true;
 }

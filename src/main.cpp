@@ -4399,8 +4399,8 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                     }
 
                     CPeerlessBet plBet;
-                    if (CPeerlessTotalsEvent::FromOpCode(opCode, plBet)) {
-                        int betAmount = txout;
+                    if (CPeerlessBet::FromOpCode(opCode, plBet)) {
+                        CAmount betAmount = txout.nValue;
 
                         CEventDB edb;
                         eventIndex_t eventsIndex;
@@ -4408,30 +4408,27 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
 
                         // Check the events index actually has events,
                         if (eventsIndex.size() < 1) {
-                            
-                            for (it = eventsIndex.begin(); it != eventsIndex.end(); it++) {
+                        
+                            CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)->second;
 
-                                CPeerlessEvent plEvent = it->second;
-                                CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)
-
-                                if (plBet.nOutcome == moneyLineWin){
-                                    ple.nMoneyLineHomeBets += betAmount;
-                                }if (plBet.nOutcome == moneyLineLose){
-                                    ple.nMoneyLineAwayBets += betAmount;
-                                }if (plBet.nOutcome == moneyLineDraw){
-                                    ple.nMoneyLineDrawBets += betAmount;
-                                }if (plBet.nOutcome == spreadOver){
-                                    ple.nSpreadOverBets += betAmount;
-                                }if (plBet.nOutcome == spreadUnder){
-                                    ple.nSpreadUnderBets += betAmount;
-                                }if (plBet.nOutcome == totalOver){
-                                    ple.nTotalsOverBets += betAmount;
-                                }if (plBet.nOutcome == totalUnder){
-                                    ple.nTotalsUnderBets += betAmount;
-                                }
-                                
-                                eiUpdated = true;
+                            if (plBet.nOutcome == moneyLineWin){
+                                ple.nMoneyLineHomeBets += betAmount;
+                                LogPrintf("@Moneyline home bet found, added to accumulator: i%", ple.nMoneyLineHomeBets);
+                            }if (plBet.nOutcome == moneyLineLose){
+                                ple.nMoneyLineAwayBets += betAmount;
+                            }if (plBet.nOutcome == moneyLineDraw){
+                                ple.nMoneyLineDrawBets += betAmount;
+                            }if (plBet.nOutcome == spreadOver){
+                                ple.nSpreadOverBets += betAmount;
+                            }if (plBet.nOutcome == spreadUnder){
+                                ple.nSpreadUnderBets += betAmount;
+                            }if (plBet.nOutcome == totalOver){
+                                ple.nTotalOverBets += betAmount;
+                            }if (plBet.nOutcome == totalUnder){
+                                ple.nTotalUnderBets += betAmount;
                             }
+                            
+                            eiUpdated = true;
                         }
                     }
 

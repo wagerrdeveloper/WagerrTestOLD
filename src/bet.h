@@ -85,12 +85,12 @@ public:
     uint32_t nMoneyLineHomeBets;
     uint32_t nMoneyLineAwayBets;
     uint32_t nMoneyLineDrawBets;
-    uint32_t nSpreadsPointsBets;
-    uint32_t nSpreadsOverBets;
-    uint32_t nSpreadsUnderBets;
-    uint32_t nTotalsPointsBets;
-    uint32_t nTotalsOverBets;
-    uint32_t nTotalsUnderBets;
+    uint32_t nSpreadPointsBets;
+    uint32_t nSpreadOverBets;
+    uint32_t nSpreadUnderBets;
+    uint32_t nTotalPointsBets;
+    uint32_t nTotalOverBets;
+    uint32_t nTotalUnderBets;
 
     // Default Constructor.
     CPeerlessEvent() {}
@@ -123,12 +123,12 @@ public:
         READWRITE(nMoneyLineHomeBets);
         READWRITE(nMoneyLineAwayBets);
         READWRITE(nMoneyLineDrawBets);
-        READWRITE(nSpreadsPointsBets);
-        READWRITE(nSpreadsOverBets);
-        READWRITE(nSpreadsUnderBets);
-        READWRITE(nTotalsPointsBets);
-        READWRITE(nTotalsOverBets);
-        READWRITE(nTotalsUnderBets);
+        READWRITE(nSpreadPointsBets);
+        READWRITE(nSpreadOverBets);
+        READWRITE(nSpreadUnderBets);
+        READWRITE(nTotalPointsBets);
+        READWRITE(nTotalOverBets);
+        READWRITE(nTotalUnderBets);
     }
 };
 

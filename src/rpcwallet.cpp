@@ -20,6 +20,7 @@
 #include "wallet.h"
 #include "walletdb.h"
 #include "zwgrchain.h"
+#include "chainparams.h"
 
 #include <cstdlib>
 #include <stdint.h>
@@ -1009,6 +1010,147 @@ UniValue getchaingamesinfo(const UniValue& params, bool fHelp)
     obj.push_back(Pair("total-bets", totalFoundCGBets));
 
     return obj;
+}
+
+/**
+ * Get event totals for a given ID.
+ *
+ * @param params The RPC params consisting of the event id.
+ * @param fHelp  Help text
+ * @return
+ */
+UniValue geteventsoverliability(const UniValue& params, bool fHelp)
+{
+  if (fHelp || (params.size() >= 1))
+        throw runtime_error(
+            "geteventtotals\n"
+            "Return event payout that exceed the liability threshold.\n"
+
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"name\": \"xxx\",         (string) The event ID\n"
+            "    \"event-id\": \"xxx\",       (string) The name of the event\n"
+            "    \"moneyline-home-win-payout\": \"xxx\",\n"
+            "    \"moneyline-away-win-payout\": n,\n"
+            "    \"moneyline-draw-payout\": n,\n"
+            "    \"spread-over-payout\": n,\n"
+            "    \"spread-under-payout\": n,\n"
+            "    \"totals-points-payout\": n,\n"
+            "    \"totals-over-payout\": n,\n"
+            "    \"totals-under-payout\": n,\n"
+            "    ]\n"
+            "  }\n"
+            "]\n"
+
+            "\nExamples:\n" +
+            HelpExampleCli("geteventtotals", "") + HelpExampleRpc("geteventtotals", ""));
+
+    CEventDB edb;
+    eventIndex_t eventsIndex;
+    edb.GetEvents(eventsIndex);
+
+    // Check the events index actually has events,
+    if (eventsIndex.size() < 1) {
+        throw runtime_error("Currently no events to list.");
+    } 
+
+    UniValue ret(UniValue::VARR);
+    UniValue events(UniValue::VARR);
+
+    map<uint32_t, CPeerlessEvent>::iterator it;
+    for (it = eventsIndex.begin(); it != eventsIndex.end(); it++) {
+
+        CPeerlessEvent plEvent = it->second;
+
+        bool hasMoneyline = false;
+        bool hasSpreads = false;
+        bool hasTotals = false;
+
+        UniValue event(UniValue::VOBJ);
+        UniValue moneyline(UniValue::VOBJ);
+        UniValue spreads(UniValue::VOBJ);
+        UniValue totals(UniValue::VOBJ);
+
+        event.push_back(Pair("event-id", (uint64_t) plEvent.nEventId));
+
+        // Calculate the expected payout for each event type
+        int mlHomeWinPayout = (uint64_t) plEvent.nMoneyLineHomeBets * plEvent.nHomeOdds;
+        if (mlHomeWinPayout >= Params().BetLiabilityThreshold()){
+            LogPrintf("Moneyline is over liability threshold i% / thesh: i%", mlHomeWinPayout, Params().BetLiabilityThreshold());
+            moneyline.push_back(Pair("moneyline-home-payout", mlHomeWinPayout));
+            hasMoneyline = true;
+        }
+
+        int mlAwayWinPayout = (uint64_t) plEvent.nMoneyLineAwayBets * plEvent.nAwayOdds;
+        if (mlAwayWinPayout >= Params().BetLiabilityThreshold()){
+            moneyline.push_back(Pair("moneyline-away-payout", mlAwayWinPayout));
+            hasMoneyline = true;
+        }
+
+        int mlDrawPayout = (uint64_t) plEvent.nMoneyLineDrawBets * plEvent.nDrawOdds;
+        if (mlDrawPayout >= Params().BetLiabilityThreshold()){
+            moneyline.push_back(Pair("moneyline-draw-payout", mlDrawPayout));
+            hasMoneyline = true;
+        }
+
+        int sdPointsPayout = (uint64_t) plEvent.nSpreadPointsBets * plEvent.nSpreadPoints;
+        if (sdPointsPayout >= Params().BetLiabilityThreshold()){
+            spreads.push_back(Pair("spreads-over-payout", sdPointsPayout));
+            hasSpreads = true;
+        }
+
+        int sdOverPayout = (uint64_t) plEvent.nSpreadOverBets * plEvent.nSpreadOverOdds;
+        if (sdOverPayout >= Params().BetLiabilityThreshold()){
+            spreads.push_back(Pair("spreads-over-payout", sdOverPayout));
+            hasSpreads = true;
+        }
+
+        int sdUnderPayout = (uint64_t) plEvent.nSpreadUnderBets * plEvent.nSpreadUnderOdds;
+        if (sdUnderPayout >= Params().BetLiabilityThreshold()){
+            spreads.push_back(Pair("spreads-under-payout", sdUnderPayout));
+            hasSpreads = true;
+        }
+
+        int tlPointsPayout = (uint64_t) plEvent.nTotalPointsBets * plEvent.nTotalPoints;
+        if (tlPointsPayout >= Params().BetLiabilityThreshold()){
+            totals.push_back(Pair("total-points-payout", tlPointsPayout));
+            hasTotals = true;
+        }
+
+        int tlOverPayout = (uint64_t) plEvent.nTotalOverBets * plEvent.nTotalOverOdds;
+        if (tlOverPayout >= Params().BetLiabilityThreshold()){
+            totals.push_back(Pair("total-over-payout", tlOverPayout));
+            hasTotals = true;
+        }
+
+        int tlUnderPayout = (uint64_t) plEvent.nTotalUnderBets * plEvent.nTotalUnderOdds;
+        if (tlUnderPayout >= Params().BetLiabilityThreshold()){
+            totals.push_back(Pair("total-under-payout", tlUnderPayout));
+            hasTotals = true;
+        }
+            
+        // Only return events whose payout currently exceeds the liability threshold
+        if (hasMoneyline) {
+            event.push_back(moneyline);
+        }
+
+        if (hasSpreads) {
+            event.push_back(spreads);
+        }
+
+        if (hasTotals) {
+            event.push_back(totals);
+        }
+
+        if (hasTotals || hasSpreads || hasTotals) {
+            events.push_back(event);
+        }
+    }
+
+    ret.push_back(events);
+
+    return ret;
 }
 
 UniValue sendtoaddress(const UniValue& params, bool fHelp)
