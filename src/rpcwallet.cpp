@@ -1023,7 +1023,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
 {
   if (fHelp || (params.size() >= 1))
         throw runtime_error(
-            "geteventtotals\n"
+            "geteventsliability\n"
             "Return the payout of each event.\n"
 
             "\nResult:\n"
@@ -1031,15 +1031,15 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
             "  {\n"
             "    \"name\": \"xxx\",         (string) The event ID\n"
             "    \"event-id\": \"xxx\",       (string) The name of the event\n"
-            "    \"moneyline-home-win-payout\": \"xxx\",\n"
-            "    \"moneyline-away-win-payout\": n,\n"
+            "    \"moneyline-home-payout\": \"xxx\",\n"
+            "    \"moneyline-away-payout\": n,\n"
             "    \"moneyline-draw-payout\": n,\n"
             "    \"spread-over-payout\": n,\n"
             "    \"spread-under-payout\": n,\n"
-            "    \"spread-points-payout\": n,\n"
+            "    \"spread-push-payout\": n,\n"
             "    \"totals-over-payout\": n,\n"
             "    \"totals-under-payout\": n,\n"
-            "    \"totals-points-payout\": n,\n"
+            "    \"totals-push-payout\": n,\n"
             "    ]\n"
             "  }\n"
             "]\n"
@@ -1066,25 +1066,25 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         UniValue event(UniValue::VOBJ);
         event.push_back(Pair("event-id", (int) plEvent.nEventId));
 
-        // Calculate the expected payout for each event type
+        //LogPrintf("\n plEvent.nEventId %i ", (int) plEvent.nEventId);
+        //LogPrintf("\n  plEvent.nSpreadPoints %i ", (int) plEvent.nSpreadPoints);
+        //LogPrintf("\n  plEvent.nSpreadOverOdds %i ", (int) plEvent.nSpreadOverOdds);
+        //LogPrintf("\n  plEvent.nSpreadUnderOdds %i ", (int) plEvent.nSpreadUnderOdds);
+
+        // Return potential moneyline payouts if the outcome is still open for betting
         if (plEvent.nHomeOdds != 0){
             event.push_back(Pair("moneyline-home-potential-liability", (int) plEvent.nMoneyLineHomePotentialLiability));
-        }else{
-            LogPrintf("Home odds are 0, skipped")
         }
 
         if (plEvent.nAwayOdds != 0){
             event.push_back(Pair("moneyline-away-potential-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
-        }else{
-            LogPrintf("Away odds are 0, skipped")
         }
 
         if (plEvent.nDrawOdds != 0){
             event.push_back(Pair("moneyline-draw-potential-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
-        }else{
-            LogPrintf("Draw odds are 0, skipped")
         }
 
+        // Return potential spread payouts if the outcome is still open for betting
         if (plEvent.nSpreadOverOdds != 0){
             event.push_back(Pair("spreads-over-potential-liability", (int) plEvent.nSpreadOverPotentialLiability));
         }
@@ -1097,6 +1097,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
             event.push_back(Pair("spreads-push-potential-liability", (int) plEvent.nSpreadPushPotentialLiability));
         }
 
+        // Return potential total payouts if the outcome is still open for betting
         if (plEvent.nTotalOverOdds != 0){
             event.push_back(Pair("total-over-potential-liability", (int) plEvent.nTotalOverPotentialLiability));
         }
@@ -1108,6 +1109,23 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         if (plEvent.nTotalPoints != 0){
             event.push_back(Pair("total-push-potential-liability", (int) plEvent.nTotalPushPotentialLiability));
         }
+
+        // Find the moneyline event with the most amount of bets
+        int moneylineTotalBets[] = {(int) plEvent.nMoneyLineHomeBets , (int) plEvent.nMoneyLineAwayBets, (int) plEvent.nMoneyLineDrawBets};
+        int highestMoneyLine = 0;
+
+        for (int n=0 ; n<2 ; n++ )
+        {
+            if (moneylineTotalBets[n] > highestMoneyLine){
+                highestMoneyLine = moneylineTotalBets[n];
+            }
+
+            //LogPrintf("highestMoneyLine %i", highestMoneyLine);
+        }
+
+        //LogPrintf("highestMoneyLine final %i", highestMoneyLine);
+        int betCount = highestMoneyLine + (int) plEvent.nSpreadPushBets + (int) plEvent.nTotalPushBets;
+        event.push_back(Pair("event-bet-count", betCount));
 
         ret.push_back(event);
     }

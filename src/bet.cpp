@@ -801,9 +801,19 @@ void SetEventSpreadOdds (CPeerlessSpreadsEvent spreadEvent) {
         // Get the event object from the index and update the spread odds values.
         CPeerlessEvent plEvent = eventIndex.find(spreadEvent.nEventId)->second;
 
+        LogPrintf("\n  PEERLESS EVENT EXISTS %i ", (int) plEvent.nSpreadPoints);
+        LogPrintf("\n  plEvent.nSpreadPoints %i ", (int) spreadEvent.nPoints);
+        LogPrintf("\n  plEvent.nSpreadOverOdds %i ", (int) spreadEvent.nOverOdds);
+        LogPrintf("\n  plEvent.nSpreadUnderOdds %i ", (int) spreadEvent.nUnderOdds);
+        
         plEvent.nSpreadPoints    = spreadEvent.nPoints;
         plEvent.nSpreadHomeOdds  = spreadEvent.nHomeOdds;
         plEvent.nSpreadAwayOdds  = spreadEvent.nAwayOdds;
+
+        LogPrintf("\n plEvent.nEventId %i ", (int) plEvent.nEventId);
+        LogPrintf("\n  plEvent.nSpreadPoints %i ", (int) plEvent.nSpreadPoints);
+        LogPrintf("\n  plEvent.nSpreadOverOdds %i ", (int) plEvent.nSpreadOverOdds);
+        LogPrintf("\n  plEvent.nSpreadUnderOdds %i ", (int) plEvent.nSpreadUnderOdds);
 
         // Update the event in the event index.
         eventIndex[spreadEvent.nEventId] = plEvent;
@@ -1515,7 +1525,8 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                         // Peerless event OP RETURN transaction.
                         CPeerlessEvent pe;
-                        if (validResultTx && CPeerlessEvent::FromOpCode(opCode, pe)) {
+                        //validResultTx && 
+                        if (CPeerlessEvent::FromOpCode(opCode, pe)) {
 
                             LogPrintf("EVENT OP CODE - %s \n", opCode.c_str());
 
