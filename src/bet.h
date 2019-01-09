@@ -383,10 +383,10 @@ public:
     static void RemoveEvent(CPeerlessEvent pe);
 };
 
-/** Find peerless events. **/
+/** Find peerless results. **/
 std::vector<CPeerlessResult> getEventResults(int height);
 
-/** Find chain games lotto result. **/
+/** Find chain games lotto results. **/
 std::pair<std::vector<CChainGamesResult>,std::vector<std::string>> getCGLottoEventResults(int height);
 
 /** Get the peerless winning bets from the block chain and return the payout vector. **/
@@ -400,6 +400,9 @@ void SetEventSpreadOdds(CPeerlessSpreadsEvent sEventOdds);
 
 /** Set a peerless event total odds **/
 void SetEventTotalOdds(CPeerlessTotalsEvent tEventOdds);
+
+/** Set a peerless event accumulators **/
+void SetEventAccummulators (CPeerlessBet ptb, int betAmount);
 
 /** Set a peerless event money line odds **/
 void SetEventMLOdds(CPeerlessUpdateOdds mEventOdds);

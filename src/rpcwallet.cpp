@@ -1013,7 +1013,7 @@ UniValue getchaingamesinfo(const UniValue& params, bool fHelp)
 }
 
 /**
- * Get event totals for a given ID.
+ * Get total liability for each event that is currently active.
  *
  * @param params The RPC params consisting of the event id.
  * @param fHelp  Help text
@@ -1065,68 +1065,93 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
 
         UniValue event(UniValue::VOBJ);
         event.push_back(Pair("event-id", (int) plEvent.nEventId));
+        bool hasSpreads = false;
+        bool hasTotals = false;
 
-        //LogPrintf("\n plEvent.nEventId %i ", (int) plEvent.nEventId);
-        //LogPrintf("\n  plEvent.nSpreadPoints %i ", (int) plEvent.nSpreadPoints);
-        //LogPrintf("\n  plEvent.nSpreadOverOdds %i ", (int) plEvent.nSpreadOverOdds);
-        //LogPrintf("\n  plEvent.nSpreadUnderOdds %i ", (int) plEvent.nSpreadUnderOdds);
+        UniValue markets(UniValue::VARR);
 
-        // Return potential moneyline payouts if the outcome is still open for betting
+        UniValue mlLiability(UniValue::VOBJ);
+        UniValue spreadsLiability(UniValue::VOBJ);
+        UniValue totalsLiability(UniValue::VOBJ);
+
+        // Return potential moneyline payouts if each outcome is still open for betting
         if (plEvent.nHomeOdds != 0){
-            event.push_back(Pair("moneyline-home-potential-liability", (int) plEvent.nMoneyLineHomePotentialLiability));
+            mlLiability.push_back(Pair("moneyline-home-liability", (int) plEvent.nMoneyLineHomePotentialLiability));
         }
 
         if (plEvent.nAwayOdds != 0){
-            event.push_back(Pair("moneyline-away-potential-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
+            mlLiability.push_back(Pair("moneyline-away-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
         }
 
         if (plEvent.nDrawOdds != 0){
-            event.push_back(Pair("moneyline-draw-potential-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
+            mlLiability.push_back(Pair("moneyline-draw-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
         }
 
-        // Return potential spread payouts if the outcome is still open for betting
+        // Return potential spread payouts if each outcome is still open for betting
         if (plEvent.nSpreadOverOdds != 0){
-            event.push_back(Pair("spreads-over-potential-liability", (int) plEvent.nSpreadOverPotentialLiability));
+            spreadsLiability.push_back(Pair("spreads-over-liability", (int) plEvent.nSpreadOverPotentialLiability));
+            hasSpreads = true;
         }
 
         if (plEvent.nSpreadUnderOdds != 0){
-            event.push_back(Pair("spreads-under-potential-liability", (int) plEvent.nSpreadUnderPotentialLiability));
+            spreadsLiability.push_back(Pair("spreads-under-liability", (int) plEvent.nSpreadUnderPotentialLiability));
+            hasSpreads = true;
         }
 
-        if (plEvent.nSpreadPoints != 0){
-            event.push_back(Pair("spreads-push-potential-liability", (int) plEvent.nSpreadPushPotentialLiability));
+        if (plEvent.nSpreadOverOdds != 0 || plEvent.nSpreadUnderOdds != 0){
+            spreadsLiability.push_back(Pair("spreads-push-liability", (int) plEvent.nSpreadPushPotentialLiability));
+            hasSpreads = true;
         }
 
-        // Return potential total payouts if the outcome is still open for betting
+        // Return potential totals payouts if each outcome is still open for betting
         if (plEvent.nTotalOverOdds != 0){
-            event.push_back(Pair("total-over-potential-liability", (int) plEvent.nTotalOverPotentialLiability));
+            totalsLiability.push_back(Pair("total-over-liability", (int) plEvent.nTotalOverPotentialLiability));
+            hasTotals = true;
         }
 
         if (plEvent.nTotalUnderOdds != 0){
-            event.push_back(Pair("total-under-potential-liability", (int) plEvent.nTotalUnderPotentialLiability));
+            totalsLiability.push_back(Pair("total-under-liability", (int) plEvent.nTotalUnderPotentialLiability));
+            hasTotals = true;
         }
 
-        if (plEvent.nTotalPoints != 0){
-            event.push_back(Pair("total-push-potential-liability", (int) plEvent.nTotalPushPotentialLiability));
+        if (plEvent.nTotalOverOdds != 0 || plEvent.nTotalUnderOdds != 0){
+            totalsLiability.push_back(Pair("total-push-liability", (int) plEvent.nTotalPushPotentialLiability));
+            hasTotals = true;
         }
 
-        // Find the moneyline event with the most amount of bets
+        // Find the moneyline event with the most amount of bets and add it to total push bets to find total number potential bets to be payed out
         int moneylineTotalBets[] = {(int) plEvent.nMoneyLineHomeBets , (int) plEvent.nMoneyLineAwayBets, (int) plEvent.nMoneyLineDrawBets};
         int highestMoneyLine = 0;
 
-        for (int n=0 ; n<2 ; n++ )
+        for (int n=0 ; n<3 ; n++ )
         {
             if (moneylineTotalBets[n] > highestMoneyLine){
                 highestMoneyLine = moneylineTotalBets[n];
             }
-
-            //LogPrintf("highestMoneyLine %i", highestMoneyLine);
         }
 
-        //LogPrintf("highestMoneyLine final %i", highestMoneyLine);
-        int betCount = highestMoneyLine + (int) plEvent.nSpreadPushBets + (int) plEvent.nTotalPushBets;
-        event.push_back(Pair("event-bet-count", betCount));
+        if (plEvent.nEventId == 701){
+            LogPrintf("nMoneyLineHomeBets %i", (int) plEvent.nMoneyLineHomeBets);
+            LogPrintf("nMoneyLineAwayBets %i", (int) plEvent.nMoneyLineAwayBets);
+            LogPrintf("nMoneyLineDrawBets %i", (int) plEvent.nMoneyLineDrawBets);
+            LogPrintf("highestMoneyLine %i", highestMoneyLine);
+        }
 
+        int betCount = highestMoneyLine + (int) plEvent.nSpreadPushBets + (int) plEvent.nTotalPushBets;
+
+        markets.push_back(mlLiability);
+
+        if (hasSpreads == true){
+            markets.push_back(spreadsLiability);
+        }
+        
+        if (hasTotals == true){
+            markets.push_back(totalsLiability);
+        }
+
+        event.push_back(Pair("event-bet-count", betCount));
+        event.push_back(Pair("markets", markets));
+    
         ret.push_back(event);
     }
 

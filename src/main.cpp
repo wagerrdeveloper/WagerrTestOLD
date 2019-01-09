@@ -4345,6 +4345,25 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
     // Look through the block for any events, results or mapping TX.
     BOOST_FOREACH (CTransaction& tx, block.vtx) {
 
+        // Search for any new bets
+        for (unsigned int i = 0; i < tx.vout.size(); i++) {
+            const CTxOut& txout = tx.vout[i];
+            std::string s = txout.scriptPubKey.ToString();
+
+            if (0 == strncmp(s.c_str(), "OP_RETURN", 9)) {
+                vector<unsigned char> v = ParseHex(s.substr(9, string::npos));
+                 std::string opCode(v.begin(), v.end());
+
+                CPeerlessBet plBet;
+                if (CPeerlessBet::FromOpCode(opCode, plBet)) {
+                    int betAmount = txout.nValue;
+                    LogPrintf("betAmount %i", betAmount);
+                    SetEventAccummulators(plBet, betAmount);
+                    eiUpdated = true;
+                }
+            }
+        }
+
         // Ensure the event TX has come from Oracle wallet.
         const CTxIn &txin = tx.vin[0];
         bool validOracleTx = IsValidOracleTx(txin);
@@ -4387,7 +4406,6 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                     // If spread odds TX found then update the spread odds for that event object.
                     CPeerlessSpreadsEvent spreadEvent;
                     if (CPeerlessSpreadsEvent::FromOpCode(opCode, spreadEvent)) {
-                        LogPrintf("Found spreads event");
                         SetEventSpreadOdds(spreadEvent);
                         eiUpdated = true;
                     }
@@ -4397,80 +4415,6 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                     if (CPeerlessTotalsEvent::FromOpCode(opCode, totalsEvent)) {
                         SetEventTotalOdds(totalsEvent);
                         eiUpdated = true;
-                    }
-
-                    CPeerlessBet plBet;
-                    if (CPeerlessBet::FromOpCode(opCode, plBet)) {
-                        CAmount betAmount = txout.nValue;
-
-                        CEventDB edb;
-                        eventIndex_t eventsIndex;
-                        edb.GetEvents(eventsIndex);
-
-                        LogPrintf("@Found peerless bet id no: i%", plBet.nEventId);
-
-                        unsigned int oddsDivisor  = Params().OddsDivisor();
-                        unsigned int betXPermille = Params().BetXPermille();
-
-                        // Check the events index actually has events
-                        if (eventsIndex.size() > 0) {
-                        
-                            CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)->second;
-
-                            if (plBet.nOutcome == moneyLineWin){
-                                int winnings = betAmount * plEvent.nHomeOdds;
-                                ple.nMoneyLineHomePotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nMoneyLineHomeBets += 1;
-                                LogPrintf("@EventId no: i%", plBet.nEventId);
-                                LogPrintf("@winnings: i%", winnings);
-                                LogPrintf("@nMoneyLineHomeBets no: i%", ple.nMoneyLineHomeBets);
-                                LogPrintf("@Potential Liability of this bet: i%", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                LogPrintf("@nMoneyLineHome Potential Liability: i%", ple.nMoneyLineHomePotentialLiability);
-                            
-                            }if (plBet.nOutcome == moneyLineLose){
-                                int winnings = betAmount * plEvent.nAwayOdds;
-                                ple.nMoneyLineAwayPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nMoneyLineAwayBets += 1;
-
-                            }if (plBet.nOutcome == moneyLineDraw){
-                                int winnings = betAmount * plEvent.nDrawOdds;
-                                ple.nMoneyLineDrawPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nMoneyLineDrawBets += 1;
-
-                            }if (plBet.nOutcome == spreadOver){
-                                int winnings = betAmount * plEvent.nSpreadOverOdds;
-                                ple.nSpreadOverPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nSpreadPushPotentialLiability += betAmount;
-                                ple.nSpreadOverBets += 1;
-                                ple.nSpreadPushBets += 1;
-
-                            }if (plBet.nOutcome == spreadUnder){
-                                int winnings = betAmount * plEvent.nSpreadUnderOdds;
-                                ple.nSpreadUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nSpreadPushPotentialLiability += betAmount;
-                                ple.nSpreadUnderBets += 1;
-                                ple.nSpreadPushBets += 1;
-
-                            }if (plBet.nOutcome == totalOver){
-                                int winnings = betAmount * plEvent.nTotalOverOdds;
-                                ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nTotalPushPotentialLiability += betAmount;
-                                ple.nTotalOverBets += 1;
-                                ple.nTotalPushBets += 1;
-
-                            }if (plBet.nOutcome == totalUnder){
-                                int winnings = betAmount * plEvent.nTotalUnderOdds;
-                                ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
-                                ple.nTotalPushPotentialLiability += betAmount;
-                                ple.nTotalUnderBets += 1;
-                                ple.nTotalPushBets += 1;
-
-                            }
-                            
-                            CEventDB::AddEvent(plEvent);
-                            
-                            eiUpdated = true;
-                        }
                     }
 
                     // If mapping found then add it to the relating map index and write the map index to disk.
