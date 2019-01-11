@@ -899,7 +899,7 @@ void SetEventTotalOdds (CPeerlessTotalsEvent totalsEvent) {
 /**
  * Updates a peerless event object with total bet accumulators.
  */
-void SetEventAccummulators (CPeerlessBet plBet, int betAmount) {
+void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
     
     CEventDB edb;
     eventIndex_t eventsIndex;
@@ -912,122 +912,163 @@ void SetEventAccummulators (CPeerlessBet plBet, int betAmount) {
     if (eventsIndex.size() > 0) {
     
         CPeerlessEvent ple = eventsIndex.find(plBet.nEventId)->second;
+        CAmount payout = 0 * COIN;
+
+        unsigned int betAmt = betAmount;
+        betAmount = betAmount / COIN;
+        LogPrintf("new betAmount %i", betAmount);
+        LogPrintf("betAmt %i", betAmt);
+        LogPrintf("oddsDivisor %i", oddsDivisor);
+        LogPrintf("betXPermille %i", betXPermille);
+        LogPrintf("betXPermille %i", betXPermille);
+
+        unsigned int winnings = 0;
 
         // Check what outcome the bet was placed on
         if (plBet.nOutcome == moneyLineWin){
-            int winnings = (betAmount * ple.nHomeOdds) / COIN;
+
+            //todo change to CAmount
+            winnings = betAmount * (ple.nHomeOdds / oddsDivisor);
             LogPrintf("\nMoneyLineHome PotentialLiability: %i", ple.nMoneyLineHomePotentialLiability);
-            ple.nMoneyLineHomePotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+
+            payout = (winnings - ((winnings - betAmt*oddsDivisor) * betXPermille / 1000)) / oddsDivisor;
+
+            LogPrintf("test payout %i", payout);
+            LogPrintf("ple.nHomeOdds %i", ple.nHomeOdds);
+            LogPrintf("ple.nHomeOdds / oddsDivisor %i", ple.nHomeOdds / oddsDivisor);
+            ple.nMoneyLineHomePotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nMoneyLineHomeBets += 1;
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnHomeOdds: %i", ple.nHomeOdds);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnMoneyLineHomeBets no: %i", ple.nMoneyLineHomeBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnMoneyLineHome: %i \n", ple.nMoneyLineHomePotentialLiability);
         
         }if (plBet.nOutcome == moneyLineLose){
-            int winnings = (betAmount * ple.nAwayOdds) / COIN;
+            winnings = betAmount * ple.nAwayOdds;
             LogPrintf("\nMoneyLineAway PotentialLiability: %i", ple.nMoneyLineAwayPotentialLiability);
-            ple.nMoneyLineAwayPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            ple.nMoneyLineAwayPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nMoneyLineAwayBets += 1;
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnAwayOdds: %i", ple.nAwayOdds);
+            LogPrintf("ple.nAwayOdds / COIN %i", ple.nAwayOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnMoneyLineAwayBets no: %i", ple.nMoneyLineAwayBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnMoneyLineAwayPotentialLiability: %i \n", ple.nMoneyLineAwayPotentialLiability);
 
         }if (plBet.nOutcome == moneyLineDraw){
-            int winnings = (betAmount * ple.nDrawOdds) / COIN;
+            winnings = (betAmount * ple.nDrawOdds);
             LogPrintf("\nMoneyLineDraw PotentialLiability: %i", ple.nMoneyLineDrawPotentialLiability);
-            ple.nMoneyLineDrawPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            ple.nMoneyLineDrawPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nMoneyLineDrawBets += 1;
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnDrawOdds: %i", ple.nDrawOdds);
+            LogPrintf("ple.nDrawOdds / COIN %i", ple.nDrawOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnMoneyLineDrawBets no: %i", ple.nMoneyLineDrawBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnMoneyLineAwayPotentialLiability: %i \n", ple.nMoneyLineDrawPotentialLiability);
 
         }if (plBet.nOutcome == spreadOver){
-            int winnings = (betAmount * ple.nSpreadOverOdds) / COIN;
-            LogPrintf("@\nSpreadOver PotentialLiability: %i", ple.nSpreadOverPotentialLiability);
-            ple.nSpreadOverPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            winnings = (betAmount * ple.nSpreadOverOdds);
+            LogPrintf("\nSpreadOver PotentialLiability: %i", ple.nSpreadOverPotentialLiability);
+            ple.nSpreadOverPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nSpreadPushPotentialLiability += betAmount;
             ple.nSpreadOverBets += 1;
             ple.nSpreadPushBets += 1;
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnSpreadOverOdds: %i", ple.nSpreadOverOdds);
+            LogPrintf("ple.nSpreadOverOdds / COIN %i", ple.nSpreadOverOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnSpreadOverBets no: %i", ple.nSpreadOverBets);
             LogPrintf("\nnSpreadPushBets no: %i", ple.nSpreadPushBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnSpreadPushPotentialLiability: %i", ple.nSpreadPushPotentialLiability);
             LogPrintf("\nnSpreadOverPotentialLiability: %i \n", ple.nSpreadOverPotentialLiability);
 
         }if (plBet.nOutcome == spreadUnder){
-            int winnings = (betAmount * ple.nSpreadUnderOdds) / COIN;
+            winnings = (betAmount * ple.nSpreadUnderOdds);
             LogPrintf("@\nSpreadUnder PotentialLiability: %i", ple.nSpreadUnderPotentialLiability);
-            ple.nSpreadUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            ple.nSpreadUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nSpreadPushPotentialLiability += betAmount;
             ple.nSpreadUnderBets += 1;
             ple.nSpreadPushBets += 1;
 
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
-            LogPrintf("\nnDrawOdds: %i", ple.nSpreadUnderOdds);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
+            LogPrintf("\nSpreadUnderOdds: %i", ple.nSpreadUnderOdds);
+            LogPrintf("ple.nSpreadUnderOdds / COIN %i", ple.nSpreadUnderOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnSpreadUnderBets no: %i", ple.nSpreadUnderBets);
             LogPrintf("\nnSpreadPushBets no: %i", ple.nSpreadPushBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnSpreadUnderPotentialLiability: %i", ple.nSpreadUnderPotentialLiability);
             LogPrintf("\nnSpreadPushPotentialLiability: %i \n", ple.nSpreadPushPotentialLiability);
 
         }if (plBet.nOutcome == totalOver){
-            int winnings = (betAmount * ple.nTotalOverOdds) / COIN;
+            winnings = (betAmount * ple.nTotalOverOdds);
             LogPrintf("\nTotalUnder PotentialLiability: %i", ple.nTotalUnderPotentialLiability);
-            ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nwinnings: %i", winnings);
+            ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nTotalPushPotentialLiability += betAmount;
             ple.nTotalOverBets += 1;
             ple.nTotalPushBets += 1;
 
             LogPrintf("\nEventId no: %i", plBet.nEventId);
-            LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnTotalOverOdds: %i", ple.nTotalOverOdds);
+            LogPrintf("ple.nTotalOverOdds / COIN %i", ple.nTotalOverOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnTotalOverBets no: %i", ple.nTotalOverBets);
             LogPrintf("\nnTotalPushBets no: %i", ple.nTotalPushBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnTotalPushPotentialLiability: %i", ple.nTotalPushPotentialLiability);
             LogPrintf("\nnTotalUnderPotentialLiability: %i \n", ple.nTotalUnderPotentialLiability);
 
         }if (plBet.nOutcome == totalUnder){
-            int winnings = (betAmount * ple.nTotalUnderOdds) / COIN;
+            winnings = (betAmount * ple.nTotalUnderOdds);
             LogPrintf("@\nnTotalUnder PotentialLiability: %i", ple.nTotalUnderPotentialLiability);
-            ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            ple.nTotalUnderPotentialLiability += ((winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
             ple.nTotalPushPotentialLiability += betAmount;
             ple.nTotalUnderBets += 1;
             ple.nTotalPushBets += 1;
 
             LogPrintf("\nEventId no: %i", plBet.nEventId);
             LogPrintf("\nwinnings: %i", winnings);
-            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 2000) / oddsDivisor);
+            LogPrintf("\nwinnings/COIN: %i", winnings/COIN);
+            LogPrintf("\nburn: %i", ((winnings - betAmount*oddsDivisor) * betXPermille / 1000) / oddsDivisor);
             LogPrintf("\nnTotalUnderOdds: %i", ple.nTotalUnderOdds);
+            LogPrintf("ple.nTotalUnderOdds / COIN %i", ple.nTotalUnderOdds / COIN);
             LogPrintf("\nbetAmount: %i", betAmount);
             LogPrintf("\nnTotalUnderBets no: %i", ple.nTotalUnderBets);
             LogPrintf("\nnTotalPushBets no: %i", ple.nTotalPushBets);
-            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
+            
+            LogPrintf("\nPotential Liability of this bet: %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 1000)) / oddsDivisor);
+            LogPrintf("\nPotential Liability of this bet (2000): %i", (winnings - ((winnings - betAmount*oddsDivisor) * betXPermille / 2000)) / oddsDivisor);
             LogPrintf("\nnTotalUnderPotentialLiability: %i", ple.nTotalUnderPotentialLiability);
             LogPrintf("\nnTotalPushPotentialLiability: %i \n", ple.nTotalPushPotentialLiability);
 

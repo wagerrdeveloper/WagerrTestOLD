@@ -4356,8 +4356,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
 
                 CPeerlessBet plBet;
                 if (CPeerlessBet::FromOpCode(opCode, plBet)) {
-                    int betAmount = txout.nValue;
-                    LogPrintf("betAmount %i", betAmount);
+                    CAmount betAmount = txout.nValue;
                     SetEventAccummulators(plBet, betAmount);
                     eiUpdated = true;
                 }
