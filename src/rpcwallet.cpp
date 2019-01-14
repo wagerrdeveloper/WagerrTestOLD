@@ -1021,7 +1021,7 @@ UniValue getchaingamesinfo(const UniValue& params, bool fHelp)
  */
 UniValue geteventsliability(const UniValue& params, bool fHelp)
 {
-  if (fHelp || (params.size() >= 1))
+  if (fHelp || (params.size() <= 1))
         throw runtime_error(
             "geteventsliability\n"
             "Return the payout of each event.\n"
@@ -1056,6 +1056,12 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         throw runtime_error("Currently no events to list.");
     } 
 
+    int payoutThreshold = params[0].get_int();
+    int betsThreshold = params[1].get_int();
+
+    //payoutThreshold = payoutThreshold * 10000; // Multiplied by Odds Divisor chain param
+    //betsThreshold = betsThreshold * 10000;
+
     UniValue ret(UniValue::VARR);
 
     map<uint32_t, CPeerlessEvent>::iterator it;
@@ -1065,94 +1071,68 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
 
         UniValue event(UniValue::VOBJ);
         event.push_back(Pair("event-id", (int) plEvent.nEventId));
-        bool hasSpreads = false;
-        bool hasTotals = false;
-
-        UniValue markets(UniValue::VARR);
-
-        UniValue mlLiability(UniValue::VOBJ);
-        UniValue spreadsLiability(UniValue::VOBJ);
-        UniValue totalsLiability(UniValue::VOBJ);
 
         // Return potential moneyline payouts if each outcome is still open for betting
-        if (plEvent.nHomeOdds != 0){
-            mlLiability.push_back(Pair("moneyline-home-liability", (int) plEvent.nMoneyLineHomePotentialLiability));
+        if (/*plEvent.nHomeOdds != 0 && */(int) plEvent.nMoneyLineHomePotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("moneyline-home-liability", (int) plEvent.nMoneyLineHomePotentialLiability ));
         }
 
-        if (plEvent.nAwayOdds != 0){
-            mlLiability.push_back(Pair("moneyline-away-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
+        if (/*plEvent.nAwayOdds != 0 && */(int) plEvent.nMoneyLineAwayPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("moneyline-away-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
         }
 
-        if (plEvent.nDrawOdds != 0){
-            mlLiability.push_back(Pair("moneyline-draw-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
+        if (/*plEvent.nDrawOdds != 0 && */(int) plEvent.nMoneyLineDrawPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("moneyline-draw-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
         }
 
         // Return potential spread payouts if each outcome is still open for betting
-        if (plEvent.nSpreadOverOdds != 0){
-            spreadsLiability.push_back(Pair("spreads-over-liability", (int) plEvent.nSpreadOverPotentialLiability));
-            hasSpreads = true;
+        if (/*plEvent.nSpreadOverOdds != 0 && */(int) plEvent.nSpreadOverPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("spreads-over-liability", (int) plEvent.nSpreadOverPotentialLiability));
         }
 
-        if (plEvent.nSpreadUnderOdds != 0){
-            spreadsLiability.push_back(Pair("spreads-under-liability", (int) plEvent.nSpreadUnderPotentialLiability));
-            hasSpreads = true;
+        if (/*plEvent.nSpreadUnderOdds != 0 && */(int) plEvent.nSpreadUnderPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("spreads-under-liability", (int) plEvent.nSpreadUnderPotentialLiability));
         }
 
-        if (plEvent.nSpreadOverOdds != 0 || plEvent.nSpreadUnderOdds != 0){
-            spreadsLiability.push_back(Pair("spreads-push-liability", (int) plEvent.nSpreadPushPotentialLiability));
-            hasSpreads = true;
+        if ( (int) plEvent.nSpreadPushPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("spreads-push-liability", (int) plEvent.nSpreadPushPotentialLiability));
         }
 
         // Return potential totals payouts if each outcome is still open for betting
-        if (plEvent.nTotalOverOdds != 0){
-            totalsLiability.push_back(Pair("total-over-liability", (int) plEvent.nTotalOverPotentialLiability));
-            hasTotals = true;
+        if (/*plEvent.nTotalOverOdds != 0 && */(int) plEvent.nTotalOverPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("total-over-liability", (int) plEvent.nTotalOverPotentialLiability));
         }
 
-        if (plEvent.nTotalUnderOdds != 0){
-            totalsLiability.push_back(Pair("total-under-liability", (int) plEvent.nTotalUnderPotentialLiability));
-            hasTotals = true;
+        if (/*plEvent.nTotalUnderOdds != 0 && */(int) plEvent.nTotalUnderPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("total-under-liability", (int) plEvent.nTotalUnderPotentialLiability));
         }
 
-        if (plEvent.nTotalOverOdds != 0 || plEvent.nTotalUnderOdds != 0){
-            totalsLiability.push_back(Pair("total-push-liability", (int) plEvent.nTotalPushPotentialLiability));
-            hasTotals = true;
+        if ( (int) plEvent.nTotalPushPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("total-push-liability", (int) plEvent.nTotalPushPotentialLiability));
         }
 
         // Find the moneyline event with the most amount of bets and add it to total push bets to find total number potential bets to be payed out
         int moneylineTotalBets[] = {(int) plEvent.nMoneyLineHomeBets , (int) plEvent.nMoneyLineAwayBets, (int) plEvent.nMoneyLineDrawBets};
         int highestMoneyLine = 0;
 
-        for (int n=0 ; n<3 ; n++ )
+        for (int n=0; n<3; n++ )
         {
             if (moneylineTotalBets[n] > highestMoneyLine){
                 highestMoneyLine = moneylineTotalBets[n];
             }
         }
 
-        if (plEvent.nEventId == 701){
-            LogPrintf("nMoneyLineHomeBets %i", (int) plEvent.nMoneyLineHomeBets);
-            LogPrintf("nMoneyLineAwayBets %i", (int) plEvent.nMoneyLineAwayBets);
-            LogPrintf("nMoneyLineDrawBets %i", (int) plEvent.nMoneyLineDrawBets);
-            LogPrintf("highestMoneyLine %i", highestMoneyLine);
-        }
-
         int betCount = highestMoneyLine + (int) plEvent.nSpreadPushBets + (int) plEvent.nTotalPushBets;
 
-        markets.push_back(mlLiability);
-
-        if (hasSpreads == true){
-            markets.push_back(spreadsLiability);
-        }
-        
-        if (hasTotals == true){
-            markets.push_back(totalsLiability);
-        }
-
+        // TODO: Currently betcount is always returned regardless of if it exceeds threshold
+        //if (betCount > betsThreshold){
         event.push_back(Pair("event-bet-count", betCount));
-        event.push_back(Pair("markets", markets));
-    
-        ret.push_back(event);
+        //}
+
+        if (event.size() > 2) {
+            ret.push_back(event);
+        } 
+
     }
 
     return ret;

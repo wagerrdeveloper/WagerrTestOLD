@@ -402,7 +402,7 @@ void SetEventSpreadOdds(CPeerlessSpreadsEvent sEventOdds);
 void SetEventTotalOdds(CPeerlessTotalsEvent tEventOdds);
 
 /** Set a peerless event accumulators **/
-void SetEventAccummulators (CPeerlessBet ptb, CAmount betAmount);
+void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount);
 
 /** Set a peerless event money line odds **/
 void SetEventMLOdds(CPeerlessUpdateOdds mEventOdds);
