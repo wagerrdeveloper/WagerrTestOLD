@@ -304,8 +304,8 @@ public:
         nBetStartHeight = 20600;                                        // The block that betting protocols become active (Testnet).
         strOracleWalletAddr = "TJtBqooSnYGhatyefH1Th9MyMXowi1xfKf";     // Oracle Masternode Event & Result Posting Wallet Address (Testnet).
         nBetBlocksIndexTimespan = 23040;                                // Currently checking back 2 weeks for events and bets for each result. (With approx. 2 days buffer).
-        strDevPayoutAddr = "TLceyDrdPLBu8DK6UZjKu4vCDUQBGPybcY";        // Development fund payout address (Testnet).
-        strOMNOPayoutAddr = "TDunmyDASGDjYwhTF3SeDLsnDweyEBpfnP";       // OMNO fund payout address (Testnet).
+        strDevPayoutAddr = "TC73Xr5LQHSQtkUShJCEnEgecGtNHe5oiK";        // Development fund payout address (Testnet).                         TLceyDrdPLBu8DK6UZjKu4vCDUQBGPybcY
+        strOMNOPayoutAddr = "TPUfUFKzV2zdg73dbfZpF4b7cLmtFaxqKB";       // OMNO fund payout address (Testnet).                                TDunmyDASGDjYwhTF3SeDLsnDweyEBpfnP
         nOMNORewardPermille = 24;                                       // profitAcc / (100-6) * 100 * 0.024 (nMNBetReward = Total Profit * 0.024).
         nDevRewardPermille = 6;                                         // profitAcc / (100-6) * 100 * 0.006 (nDevReward = Total Profit * 0.006).
         nOddsDivisor = 10000;                                           // Odds divisor, Facilitates calculations with floating integers.

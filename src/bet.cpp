@@ -301,8 +301,8 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nMoneyLineHomePotentialLiability  = 0; 
     pe.nMoneyLineAwayPotentialLiability  = 0;
     pe.nMoneyLineDrawPotentialLiability  = 0;
-    pe.nSpreadOverPotentialLiability     = 0;
-    pe.nSpreadUnderPotentialLiability    = 0;
+    pe.nSpreadHomePotentialLiability     = 0;
+    pe.nSpreadAwayPotentialLiability    = 0;
     pe.nSpreadPushPotentialLiability     = 0;
     pe.nTotalOverPotentialLiability      = 0;
     pe.nTotalUnderPotentialLiability     = 0;
@@ -312,8 +312,8 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nMoneyLineHomeBets  = 0; 
     pe.nMoneyLineAwayBets  = 0;
     pe.nMoneyLineDrawBets  = 0;
-    pe.nSpreadOverBets     = 0;
-    pe.nSpreadUnderBets    = 0;
+    pe.nSpreadHomeBets     = 0;
+    pe.nSpreadAwayBets    = 0;
     pe.nSpreadPushBets     = 0;
     pe.nTotalOverBets      = 0;
     pe.nTotalUnderBets     = 0;
@@ -941,24 +941,24 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
             pe.nMoneyLineDrawPotentialLiability += payout / COIN ;
             pe.nMoneyLineDrawBets += 1;
 
-        }else if (plBet.nOutcome == spreadOver){
-            winnings = betAmount * pe.nSpreadOverOdds;
+        }else if (plBet.nOutcome == spreadHome){
+            winnings = betAmount * pe.nSpreadHomeOdds;
             burn = (winnings - betAmount*oddsDivisor) * betXPermille / 2000;
             payout = winnings - burn;
 
-            pe.nSpreadOverPotentialLiability += payout / COIN ;
+            pe.nSpreadHomePotentialLiability += payout / COIN ;
             pe.nSpreadPushPotentialLiability += betAmount / COIN;
-            pe.nSpreadOverBets += 1;
+            pe.nSpreadHomeBets += 1;
             pe.nSpreadPushBets += 1;
 
-        }else if (plBet.nOutcome == spreadUnder){
-            winnings = betAmount * pe.nSpreadUnderOdds;
+        }else if (plBet.nOutcome == spreadAway){
+            winnings = betAmount * pe.nSpreadAwayOdds;
             burn = (winnings - betAmount*oddsDivisor) * betXPermille / 2000;
             payout = winnings - burn;
 
-            pe.nSpreadUnderPotentialLiability += payout / COIN ;
+            pe.nSpreadAwayPotentialLiability += payout / COIN ;
             pe.nSpreadPushPotentialLiability += betAmount / COIN;
-            pe.nSpreadUnderBets += 1;
+            pe.nSpreadAwayBets += 1;
             pe.nSpreadPushBets += 1;
 
         }else if (plBet.nOutcome == totalOver){

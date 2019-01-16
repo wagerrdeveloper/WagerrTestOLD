@@ -1057,10 +1057,6 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
     } 
 
     int payoutThreshold = params[0].get_int();
-    int betsThreshold = params[1].get_int();
-
-    //payoutThreshold = payoutThreshold * 10000; // Multiplied by Odds Divisor chain param
-    //betsThreshold = betsThreshold * 10000;
 
     UniValue ret(UniValue::VARR);
 
@@ -1073,25 +1069,25 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         event.push_back(Pair("event-id", (int) plEvent.nEventId));
 
         // Return potential moneyline payouts if each outcome is still open for betting
-        if (/*plEvent.nHomeOdds != 0 && */(int) plEvent.nMoneyLineHomePotentialLiability >= payoutThreshold ){
+        if (plEvent.nHomeOdds != 0 && (int) plEvent.nMoneyLineHomePotentialLiability >= payoutThreshold ){
             event.push_back(Pair("moneyline-home-liability", (int) plEvent.nMoneyLineHomePotentialLiability ));
         }
 
-        if (/*plEvent.nAwayOdds != 0 && */(int) plEvent.nMoneyLineAwayPotentialLiability >= payoutThreshold ){
+        if (plEvent.nAwayOdds != 0 && (int) plEvent.nMoneyLineAwayPotentialLiability >= payoutThreshold ){
             event.push_back(Pair("moneyline-away-liability", (int) plEvent.nMoneyLineAwayPotentialLiability));
         }
 
-        if (/*plEvent.nDrawOdds != 0 && */(int) plEvent.nMoneyLineDrawPotentialLiability >= payoutThreshold ){
+        if (plEvent.nDrawOdds != 0 && (int) plEvent.nMoneyLineDrawPotentialLiability >= payoutThreshold ){
             event.push_back(Pair("moneyline-draw-liability", (int) plEvent.nMoneyLineDrawPotentialLiability));
         }
 
         // Return potential spread payouts if each outcome is still open for betting
-        if (/*plEvent.nSpreadOverOdds != 0 && */(int) plEvent.nSpreadOverPotentialLiability >= payoutThreshold ){
-            event.push_back(Pair("spreads-over-liability", (int) plEvent.nSpreadOverPotentialLiability));
+        if (plEvent.nSpreadHomeOdds != 0 && (int) plEvent.nSpreadHomePotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("spreads-home-liability", (int) plEvent.nSpreadHomePotentialLiability));
         }
 
-        if (/*plEvent.nSpreadUnderOdds != 0 && */(int) plEvent.nSpreadUnderPotentialLiability >= payoutThreshold ){
-            event.push_back(Pair("spreads-under-liability", (int) plEvent.nSpreadUnderPotentialLiability));
+        if (plEvent.nSpreadAwayOdds != 0 && (int) plEvent.nSpreadAwayPotentialLiability >= payoutThreshold ){
+            event.push_back(Pair("spreads-away-liability", (int) plEvent.nSpreadAwayPotentialLiability));
         }
 
         if ( (int) plEvent.nSpreadPushPotentialLiability >= payoutThreshold ){
@@ -1099,11 +1095,11 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         }
 
         // Return potential totals payouts if each outcome is still open for betting
-        if (/*plEvent.nTotalOverOdds != 0 && */(int) plEvent.nTotalOverPotentialLiability >= payoutThreshold ){
+        if (plEvent.nTotalOverOdds != 0 && (int) plEvent.nTotalOverPotentialLiability >= payoutThreshold ){
             event.push_back(Pair("total-over-liability", (int) plEvent.nTotalOverPotentialLiability));
         }
 
-        if (/*plEvent.nTotalUnderOdds != 0 && */(int) plEvent.nTotalUnderPotentialLiability >= payoutThreshold ){
+        if (plEvent.nTotalUnderOdds != 0 && (int) plEvent.nTotalUnderPotentialLiability >= payoutThreshold ){
             event.push_back(Pair("total-under-liability", (int) plEvent.nTotalUnderPotentialLiability));
         }
 

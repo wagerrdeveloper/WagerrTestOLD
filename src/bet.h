@@ -85,8 +85,8 @@ public:
     uint32_t nMoneyLineHomePotentialLiability;
     uint32_t nMoneyLineAwayPotentialLiability;
     uint32_t nMoneyLineDrawPotentialLiability;
-    uint32_t nSpreadOverPotentialLiability;
-    uint32_t nSpreadUnderPotentialLiability;
+    uint32_t nSpreadHomePotentialLiability;
+    uint32_t nSpreadAwayPotentialLiability;
     uint32_t nSpreadPushPotentialLiability;
     uint32_t nTotalOverPotentialLiability;
     uint32_t nTotalUnderPotentialLiability;
@@ -94,8 +94,8 @@ public:
     uint32_t nMoneyLineHomeBets;
     uint32_t nMoneyLineAwayBets;
     uint32_t nMoneyLineDrawBets;
-    uint32_t nSpreadOverBets;
-    uint32_t nSpreadUnderBets;
+    uint32_t nSpreadHomeBets;
+    uint32_t nSpreadAwayBets;
     uint32_t nSpreadPushBets;
     uint32_t nTotalOverBets;
     uint32_t nTotalUnderBets;
@@ -132,8 +132,8 @@ public:
         READWRITE(nMoneyLineHomePotentialLiability);
         READWRITE(nMoneyLineAwayPotentialLiability);
         READWRITE(nMoneyLineDrawPotentialLiability);
-        READWRITE(nSpreadOverPotentialLiability);
-        READWRITE(nSpreadUnderPotentialLiability);
+        READWRITE(nSpreadHomePotentialLiability);
+        READWRITE(nSpreadAwayPotentialLiability);
         READWRITE(nSpreadPushPotentialLiability);
         READWRITE(nTotalOverPotentialLiability);
         READWRITE(nTotalUnderPotentialLiability);
@@ -141,8 +141,8 @@ public:
         READWRITE(nMoneyLineHomeBets);
         READWRITE(nMoneyLineAwayBets);
         READWRITE(nMoneyLineDrawBets);     
-        READWRITE(nSpreadOverBets);
-        READWRITE(nSpreadUnderBets);
+        READWRITE(nSpreadHomeBets);
+        READWRITE(nSpreadAwayBets);
         READWRITE(nSpreadPushBets);
         READWRITE(nTotalOverBets);
         READWRITE(nTotalUnderBets); 
