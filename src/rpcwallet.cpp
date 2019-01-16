@@ -66,8 +66,8 @@ UniValue listevents(const UniValue& params, bool fHelp)
             HelpExampleCli("listevents", "") + HelpExampleRpc("listevents", ""));
 
     UniValue ret(UniValue::VARR);
-    
-    // Set the Oracle wallet address. 
+
+    // Set the Oracle wallet address.
     std::string OracleWalletAddr = Params().OracleWalletAddr();
 
     // We keep track of `vout`s that are addressed to our "Core Wallet" (the
@@ -77,11 +77,8 @@ UniValue listevents(const UniValue& params, bool fHelp)
     // will process the transaction.
     std::map<uint256, uint32_t> coreWalletVouts;
 
-    // TODO We currently search the entire block chain every time we query the
-    // current events. Instead, the events up to a particular block/transaction
-    // should be read and cached when the process starts, and ideally persisted,
-    // to reduce the processing time for this command.
-    CBlockIndex* pindex = chainActive.Height() > Params().BetStartHeight() ? chainActive[Params().BetStartHeight()] : NULL;
+    // Searches the previous 25,000 blocks for events to display in the wallet
+    CBlockIndex* pindex = chainActive[chainActive.Height()  - 25000];
 
     while (pindex) {
 
