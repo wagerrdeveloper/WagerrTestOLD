@@ -4398,7 +4398,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                     // If update moneyline odds TX found in block remove event from event index.
                     CPeerlessUpdateOdds moneylineUpdate;
                     if (CPeerlessUpdateOdds::FromOpCode(opCode, moneylineUpdate)) {
-                        CEventDB::SetEventMoneylineOdds(moneylineUpdate);
+                        SetEventMoneylineOdds(moneylineUpdate);
                         eiUpdated = true;
                     }
 
