@@ -395,6 +395,8 @@ std::vector<CTxOut> GetBetPayouts(int height);
 /** Get the chain games winner and return the payout vector. **/
 std::vector<CTxOut> GetCGLottoBetPayouts(int height);
 
+void SetEventMoneylineOdds(CPeerlessUpdateOdds mEventOdds);
+
 /** Set a peerless event spread odds **/
 void SetEventSpreadOdds(CPeerlessSpreadsEvent sEventOdds);
 
