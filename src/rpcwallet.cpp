@@ -1057,6 +1057,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
     } 
 
     int payoutThreshold = params[0].get_int();
+    int betThreshold = params[1].get_int();
 
     UniValue ret(UniValue::VARR);
 
@@ -1125,7 +1126,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
         event.push_back(Pair("event-bet-count", betCount));
         //}
 
-        if (event.size() > 2) {
+        if (event.size() > 2 || betCount >= betThreshold) {
             ret.push_back(event);
         } 
 
