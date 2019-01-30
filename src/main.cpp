@@ -1811,14 +1811,14 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 int64_t GetBlockValue(int nHeight)
 {
-   
+
     if (Params().NetworkID() == CBaseChainParams::REGTEST || Params().NetworkID() == CBaseChainParams::TESTNET) {
         if (nHeight == 0) {
             // Genesis block
             return 0 * COIN;
         } else if (nHeight == 1) {
             /* PREMINE: Current available wagerr on DEX marketc 198360471 wagerr
-            Info abobut premine: 
+            Info abobut premine:
             Full premine size is 198360471. First 100 blocks mine 250000 wagerr per block - 198360471 - (100 * 250000) = 173360471
             */
             // 87.4 % of premine
@@ -1827,7 +1827,7 @@ int64_t GetBlockValue(int nHeight)
             return 250000 * COIN;
         } else if (nHeight >= 200 && nHeight <= Params().LAST_POW_BLOCK()) {
             return 100000 * COIN;
-        } else if (nHeight > Params().LAST_POW_BLOCK() && nHeight <= Params().Zerocoin_Block_V2_Start()) { 
+        } else if (nHeight > Params().LAST_POW_BLOCK() && nHeight <= Params().Zerocoin_Block_V2_Start()) {
             return 3.8 / 90 * 100 * COIN;
         } else if (nHeight > Params().Zerocoin_Block_V2_Start()) {
             return 3.8 * COIN;
@@ -1836,7 +1836,7 @@ int64_t GetBlockValue(int nHeight)
         }
     }
 
-    
+
     // MAIN
     int64_t nSubsidy = 0;
     if (nHeight == 0) {
@@ -1844,7 +1844,7 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 0 * COIN;
     } else if (nHeight == 1) {
         /* PREMINE: Current available wagerr on DEX marketc 198360471 wagerr
-        Info abobut premine: 
+        Info abobut premine:
         Full premine size is 198360471. First 100 blocks mine 250000 wagerr per block - 198360471 - (100 * 250000) = 173360471
         */
         // 87.4 % of premine
@@ -2955,7 +2955,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     // Validate bet payouts nExpectedMint against the block pindex->nMint to ensure reward wont pay to much.
     /* **TODO**
-     * 
+     *
      * Kokary: there are some oddities with fee calculation:
      * - Coinstake transactions do have fees, resulting in rougly 4400 satoshi less mints
      * - When there are no masternodes to pay, those MN rewards are not paid, resulting in 1*COIN less than expected mints
@@ -2965,13 +2965,15 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
      *         return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
      * Though if we keep this check for minimum mint, it should be moved to IsBlockValueValid().
      */
-    if (Params().NetworkID() == CBaseChainParams::TESTNET && (pindex->nHeight >= 15195 && pindex->nHeight <= 15220)) {
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && ((pindex->nHeight >= 15195 && pindex->nHeight <= 15220) || ( pindex->nHeight >= 25960 && pindex->nHeight <= 25970 ))) {
         LogPrintf("Skipping validation of mint size on testnet subset");
     } else if (pindex->nMint > nExpectedMint || pindex->nMint < (nExpectedMint - 2*COIN) || !IsBlockValueValid( block, nExpectedMint, pindex->nMint)) {
         return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
     }
 
-    if (!IsBlockPayoutsValid(vExpectedAllPayouts, block))
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && ( pindex->nHeight >= 25960 && pindex->nHeight <= 25970 )) {
+        LogPrintf("Skipping validation of mint size on testnet subset");
+    } else if  (!IsBlockPayoutsValid(vExpectedAllPayouts, block))
         return state.DoS(100, error("ConnectBlock() : Bet payout TX's don't match up with block payout TX's %i ", pindex->nHeight), REJECT_INVALID, "bad-cb-payout");
 
     // Clear all the payout vectors.
@@ -4394,7 +4396,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                         CEventDB::RemoveEvent(plEvent);
                         eiUpdated = true;
                     }
-                    
+
                     // If update moneyline odds TX found in block remove event from event index.
                     CPeerlessUpdateOdds moneylineUpdate;
                     if (CPeerlessUpdateOdds::FromOpCode(opCode, moneylineUpdate)) {

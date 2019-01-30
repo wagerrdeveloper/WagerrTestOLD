@@ -298,7 +298,7 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nTotalUnderOdds  = 0;
 
     // Set default values for the spread, moneyline and totals potantial liability accumulators
-    pe.nMoneyLineHomePotentialLiability  = 0; 
+    pe.nMoneyLineHomePotentialLiability  = 0;
     pe.nMoneyLineAwayPotentialLiability  = 0;
     pe.nMoneyLineDrawPotentialLiability  = 0;
     pe.nSpreadHomePotentialLiability     = 0;
@@ -309,7 +309,7 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nTotalPushPotentialLiability      = 0;
 
     // Set default values for the spread, moneyline and totals bet accumulators
-    pe.nMoneyLineHomeBets  = 0; 
+    pe.nMoneyLineHomeBets  = 0;
     pe.nMoneyLineAwayBets  = 0;
     pe.nMoneyLineDrawBets  = 0;
     pe.nSpreadHomeBets     = 0;
@@ -748,7 +748,7 @@ bool CPeerlessSpreadsEvent::FromOpCode(std::string opCode, CPeerlessSpreadsEvent
     }
 
     // Ensure the peerless result transaction type is correct.
-    if (opCode[2] != plSpreadsEventTxType) { 
+    if (opCode[2] != plSpreadsEventTxType) {
         // TODO - add proper error handling
         return false;
     }
@@ -905,7 +905,7 @@ void SetEventTotalOdds (CPeerlessTotalsEvent totalsEvent) {
  * Updates a peerless event object with total bet accumulators.
  */
 void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
-    
+
     CEventDB edb;
     eventIndex_t eventsIndex;
     edb.GetEvents(eventsIndex);
@@ -915,7 +915,7 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
 
     // Check the events index actually has events
     if (eventsIndex.size() > 0) {
-    
+
         CPeerlessEvent pe = eventsIndex.find(plBet.nEventId)->second;
 
         LogPrintf("\n plBet.nEventId PL %i", plBet.nEventId);
@@ -976,7 +976,7 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
             LogPrintf("\n payout / COIN %i", payout / COIN);
             LogPrintf("\n totalOver PL %i", pe.nTotalOverPotentialLiability);
             LogPrintf("\n pe.nTotalOverOdds PL %i", pe.nTotalOverOdds);
-            
+
             pe.nTotalPushPotentialLiability += betAmount / COIN;
             pe.nTotalOverBets += 1;
             pe.nTotalPushBets += 1;
@@ -996,11 +996,11 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
             pe.nTotalPushBets += 1;
 
         }
-        
+
         eventsIndex[plBet.nEventId] = pe;
         CEventDB::SetEvents(eventsIndex);
     }
-    
+
 }
 
 /**
@@ -1552,6 +1552,9 @@ std::vector<CTxOut> GetBetPayouts(int height)
         unsigned int nMoneylineOdds = 0;
         unsigned int nSpreadsOdds = 0;
         unsigned int nTotalsOdds = 0;
+        unsigned int nMoneylineOddsTemp = 0;
+        unsigned int nSpreadsOddsTemp = 0;
+        unsigned int nTotalsOddsTemp = 0;
 
         time_t latestEventStartTime = 0;
         bool eventFound = false;
@@ -1622,20 +1625,20 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                         // Peerless event OP RETURN transaction.
                         CPeerlessEvent pe;
-                        //validResultTx && 
+                        //validResultTx &&
                         if (CPeerlessEvent::FromOpCode(opCode, pe)) {
 
                             LogPrintf("EVENT OP CODE - %s \n", opCode.c_str());
 
                             // If current event ID matches result ID set the teams and odds.
                             if (result.nEventId == pe.nEventId && nMoneylineResult == moneyLineWin) {
-                                nMoneylineOdds = pe.nHomeOdds;
+                                nMoneylineOddsTemp = pe.nHomeOdds;
                             }
                             else if (result.nEventId == pe.nEventId && nMoneylineResult == moneyLineLose) {
-                                nMoneylineOdds = pe.nAwayOdds;
+                                nMoneylineOddsTemp = pe.nAwayOdds;
                             }
                             else if (result.nEventId == pe.nEventId && nMoneylineResult == moneyLineDraw) {
-                                nMoneylineOdds = pe.nDrawOdds;
+                                nMoneylineOddsTemp = pe.nDrawOdds;
                             }
 
                             // Set the latest event start time and eventFound flags  .
@@ -1651,13 +1654,13 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                             // If current event ID matches result ID set the odds.
                             if (result.nEventId == puo.nEventId && nMoneylineResult == moneyLineWin) {
-                                nMoneylineOdds = puo.nHomeOdds;
+                                nMoneylineOddsTemp = puo.nHomeOdds;
                             }
                             else if (result.nEventId == puo.nEventId && nMoneylineResult == moneyLineLose) {
-                                nMoneylineOdds = puo.nAwayOdds;
+                                nMoneylineOddsTemp = puo.nAwayOdds;
                             }
                             else if (result.nEventId == puo.nEventId && nMoneylineResult == moneyLineDraw) {
-                                nMoneylineOdds = puo.nDrawOdds;
+                                nMoneylineOddsTemp = puo.nDrawOdds;
                             }
                         }
 
@@ -1669,13 +1672,13 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                             // If current event ID matches result ID set the odds.
                             if (result.nEventId == pse.nEventId && vSpreadsResult.at(0) == spreadHome && vSpreadsResult.at(1) == spreadHome) {
-                                nSpreadsOdds = pse.nHomeOdds;
+                                nSpreadsOddsTemp = pse.nHomeOdds;
                             }
                             else if (result.nEventId == pse.nEventId && vSpreadsResult.at(0) == spreadAway && vSpreadsResult.at(1) == spreadAway) {
-                                nSpreadsOdds = pse.nAwayOdds;
+                                nSpreadsOddsTemp = pse.nAwayOdds;
                             }
                             else if (result.nEventId == pse.nEventId && vSpreadsResult.at(0) == spreadHome && vSpreadsResult.at(1) == spreadAway) {
-                                nSpreadsOdds = Params().OddsDivisor();
+                                nSpreadsOddsTemp = Params().OddsDivisor();
                             }
                         }
 
@@ -1687,13 +1690,13 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                             // If current event ID matches result ID set the odds.
                             if (result.nEventId == pte.nEventId && vTotalsResult.at(0) == totalOver && vTotalsResult.at(1) == totalOver) {
-                                nTotalsOdds = pte.nOverOdds;
+                                nTotalsOddsTemp = pte.nOverOdds;
                             }
                             else if (result.nEventId == pte.nEventId && vTotalsResult.at(0) == totalUnder && vTotalsResult.at(1) == totalUnder) {
-                                nTotalsOdds = pte.nUnderOdds;
+                                nTotalsOddsTemp = pte.nUnderOdds;
                             }
                             else if (result.nEventId == pte.nEventId && vTotalsResult.at(0) == totalOver && vTotalsResult.at(1) == totalUnder) {
-                                nTotalsOdds = Params().OddsDivisor();
+                                nTotalsOddsTemp = Params().OddsDivisor();
                             }
                         }
 
@@ -1768,7 +1771,9 @@ std::vector<CTxOut> GetBetPayouts(int height)
                     }
                 }
             }
-
+            nSpreadsOdds   = nSpreadsOddsTemp ;
+            nTotalsOdds    = nTotalsOddsTemp ;
+            nMoneylineOdds = nMoneylineOddsTemp ;
             BlocksIndex = chainActive.Next(BlocksIndex);
         }
     }
@@ -1897,7 +1902,7 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
                 uint256 hashBlock;
                 CTransaction txPrev;
 
-                bool validTX = IsValidOracleTx(txin); 
+                bool validTX = IsValidOracleTx(txin);
 
                 // Check all TX vouts for an OP RETURN.
                 for (unsigned int i = 0; i < tx.vout.size(); i++) {
@@ -1999,5 +2004,3 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
 
     return vexpectedCGLottoBetPayouts;
 }
-
-
