@@ -547,11 +547,6 @@ void SetEventMoneylineOdds (CPeerlessUpdateOdds moneylineUpdate) {
         // Get the event object from the index and update the totals odds values.
         CPeerlessEvent plEvent = eventIndex.find(moneylineUpdate.nEventId)->second;
 
-        LogPrintf("UPDATING MONEYLINE ODDS");
-        LogPrintf("\nnHomeOdds %i",moneylineUpdate.nHomeOdds);
-        LogPrintf("\nnAwayOdds %i",moneylineUpdate.nAwayOdds);
-        LogPrintf("\nnDrawOdds %i",moneylineUpdate.nDrawOdds);
-
         plEvent.nHomeOdds = moneylineUpdate.nHomeOdds;
         plEvent.nAwayOdds = moneylineUpdate.nAwayOdds;
         plEvent.nDrawOdds = moneylineUpdate.nDrawOdds;
@@ -901,6 +896,7 @@ void SetEventTotalOdds (CPeerlessTotalsEvent totalsEvent) {
     }
 }
 
+
 /**
  * Updates a peerless event object with total bet accumulators.
  */
@@ -971,12 +967,7 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
             burn = (winnings - betAmount*oddsDivisor) * betXPermille / 2000;
             payout = winnings - burn;
 
-            LogPrintf("\n totalOver PL %i", pe.nTotalOverPotentialLiability);
             pe.nTotalOverPotentialLiability += payout / COIN ;
-            LogPrintf("\n payout / COIN %i", payout / COIN);
-            LogPrintf("\n totalOver PL %i", pe.nTotalOverPotentialLiability);
-            LogPrintf("\n pe.nTotalOverOdds PL %i", pe.nTotalOverOdds);
-
             pe.nTotalPushPotentialLiability += betAmount / COIN;
             pe.nTotalOverBets += 1;
             pe.nTotalPushBets += 1;
@@ -986,11 +977,7 @@ void SetEventAccummulators (CPeerlessBet plBet, CAmount betAmount) {
             burn = (winnings - betAmount*oddsDivisor) * betXPermille / 2000;
             payout = winnings - burn;
 
-            LogPrintf("\n totalUnder PL %i", pe.nTotalUnderPotentialLiability);
             pe.nTotalUnderPotentialLiability += payout / COIN;
-            LogPrintf("\n payout / COIN %i", payout / COIN);
-            LogPrintf("\n totalUnder PL %i", pe.nTotalUnderPotentialLiability);
-            LogPrintf("\n pe.nTotalUnderOdds PL %i", pe.nTotalUnderOdds);
             pe.nTotalPushPotentialLiability += betAmount / COIN;
             pe.nTotalUnderBets += 1;
             pe.nTotalPushBets += 1;

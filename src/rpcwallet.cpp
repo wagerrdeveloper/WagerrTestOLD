@@ -1051,7 +1051,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
     eventIndex_t eventsIndex;
     edb.GetEvents(eventsIndex);
 
-    // Check the events index actually has events,
+    // Check the events index has events
     if (eventsIndex.size() < 1) {
         throw runtime_error("Currently no events to list.");
     } 
@@ -1121,10 +1121,7 @@ UniValue geteventsliability(const UniValue& params, bool fHelp)
 
         int betCount = highestMoneyLine + (int) plEvent.nSpreadPushBets + (int) plEvent.nTotalPushBets;
 
-        // TODO: Currently betcount is always returned regardless of if it exceeds threshold
-        //if (betCount > betsThreshold){
         event.push_back(Pair("event-bet-count", betCount));
-        //}
 
         if (event.size() > 2 || betCount >= betThreshold) {
             ret.push_back(event);

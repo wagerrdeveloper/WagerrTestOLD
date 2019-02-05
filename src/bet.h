@@ -397,10 +397,10 @@ std::vector<CTxOut> GetCGLottoBetPayouts(int height);
 
 void SetEventMoneylineOdds(CPeerlessUpdateOdds mEventOdds);
 
-/** Set a peerless event spread odds **/
+/** Set a peerless event's spread odds **/
 void SetEventSpreadOdds(CPeerlessSpreadsEvent sEventOdds);
 
-/** Set a peerless event total odds **/
+/** Set a peerless event's total odds **/
 void SetEventTotalOdds(CPeerlessTotalsEvent tEventOdds);
 
 /** Set a peerless event accumulators **/
