@@ -536,23 +536,23 @@ bool CPeerlessUpdateOdds::ToOpCode(CPeerlessUpdateOdds puo, std::string &opCode)
 /**
  * Updates a peerless event object with totals odds.
  */
-void SetEventMoneylineOdds (CPeerlessUpdateOdds moneylineUpdate) {
+void SetEventMLOdds (CPeerlessUpdateOdds puo) {
     CEventDB edb;
     eventIndex_t eventIndex;
     edb.GetEvents(eventIndex);
 
     // First check a peerless event exists in the event index.
-    if (eventIndex.count(moneylineUpdate.nEventId) > 0) {
+    if (eventIndex.count(puo.nEventId) > 0) {
 
         // Get the event object from the index and update the totals odds values.
-        CPeerlessEvent plEvent = eventIndex.find(moneylineUpdate.nEventId)->second;
+        CPeerlessEvent plEvent = eventIndex.find(puo.nEventId)->second;
 
-        plEvent.nHomeOdds = moneylineUpdate.nHomeOdds;
-        plEvent.nAwayOdds = moneylineUpdate.nAwayOdds;
-        plEvent.nDrawOdds = moneylineUpdate.nDrawOdds;
+        plEvent.nHomeOdds = puo.nHomeOdds;
+        plEvent.nAwayOdds = puo.nAwayOdds;
+        plEvent.nDrawOdds = puo.nDrawOdds;
 
         // Update the event in the event index.
-        eventIndex[moneylineUpdate.nEventId] = plEvent;
+        eventIndex[puo.nEventId] = plEvent;
         CEventDB::SetEvents(eventIndex);
     }
 }
