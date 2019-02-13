@@ -179,6 +179,7 @@ BITCOIN_CORE_H = \
   timedata.h \
   tinyformat.h \
   torcontrol.h \
+  transactionrecord.h \
   txdb.h \
   txmempool.h \
   ui_interface.h \
@@ -282,6 +283,7 @@ libbitcoin_wallet_a_SOURCES = \
   primitives/zerocoin.cpp \
   rpcwallet.cpp \
   kernel.cpp \
+  transactionrecord.cpp \
   wallet.cpp \
   wallet_ismine.cpp \
   walletdb.cpp \
