@@ -272,7 +272,7 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
         return false;
     }
 
-    // Ensure the peerless event OpCode has the correct BTX format version number.
+        // Ensure the peerless event OpCode has the correct BTX format version number.
     if (ReadBTXFormatVersion(opCode) != BTX_FORMAT_VERSION) {
         // TODO - add proper error handling
         return false;
@@ -297,6 +297,28 @@ bool CPeerlessEvent::FromOpCode(std::string opCode, CPeerlessEvent &pe)
     pe.nTotalPoints     = 0;
     pe.nTotalOverOdds   = 0;
     pe.nTotalUnderOdds  = 0;
+
+    // Set default values for the spread, moneyline and totals potantial liability accumulators
+    pe.nMoneyLineHomePotentialLiability  = 0;
+    pe.nMoneyLineAwayPotentialLiability  = 0;
+    pe.nMoneyLineDrawPotentialLiability  = 0;
+    pe.nSpreadHomePotentialLiability     = 0;
+    pe.nSpreadAwayPotentialLiability    = 0;
+    pe.nSpreadPushPotentialLiability     = 0;
+    pe.nTotalOverPotentialLiability      = 0;
+    pe.nTotalUnderPotentialLiability     = 0;
+    pe.nTotalPushPotentialLiability      = 0;
+
+    // Set default values for the spread, moneyline and totals bet accumulators
+    pe.nMoneyLineHomeBets  = 0;
+    pe.nMoneyLineAwayBets  = 0;
+    pe.nMoneyLineDrawBets  = 0;
+    pe.nSpreadHomeBets     = 0;
+    pe.nSpreadAwayBets    = 0;
+    pe.nSpreadPushBets     = 0;
+    pe.nTotalOverBets      = 0;
+    pe.nTotalUnderBets     = 0;
+    pe.nTotalPushBets      = 0;
 
     return true;
 }
