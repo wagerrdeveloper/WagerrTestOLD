@@ -81,6 +81,9 @@ bool fTxIndex = true;
 bool fIsBareMultisigStd = true;
 bool fCheckBlockIndex = false;
 bool fVerifyingBlocks = false;
+bool fBadResult = false;
+
+
 unsigned int nCoinCacheSize = 5000;
 bool fAlerts = DEFAULT_ALERTS;
 
@@ -1899,14 +1902,14 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 int64_t GetBlockValue(int nHeight)
 {
-   
+
     if (Params().NetworkID() == CBaseChainParams::REGTEST || Params().NetworkID() == CBaseChainParams::TESTNET) {
         if (nHeight == 0) {
             // Genesis block
             return 0 * COIN;
         } else if (nHeight == 1) {
             /* PREMINE: Current available wagerr on DEX marketc 198360471 wagerr
-            Info abobut premine: 
+            Info abobut premine:
             Full premine size is 198360471. First 100 blocks mine 250000 wagerr per block - 198360471 - (100 * 250000) = 173360471
             */
             // 87.4 % of premine
@@ -1915,7 +1918,7 @@ int64_t GetBlockValue(int nHeight)
             return 250000 * COIN;
         } else if (nHeight >= 200 && nHeight <= Params().LAST_POW_BLOCK()) {
             return 100000 * COIN;
-        } else if (nHeight > Params().LAST_POW_BLOCK() && nHeight <= Params().Zerocoin_Block_V2_Start()) { 
+        } else if (nHeight > Params().LAST_POW_BLOCK() && nHeight <= Params().Zerocoin_Block_V2_Start()) {
             return 3.8 / 90 * 100 * COIN;
         } else if (nHeight > Params().Zerocoin_Block_V2_Start()) {
             return 3.8 * COIN;
@@ -1924,7 +1927,7 @@ int64_t GetBlockValue(int nHeight)
         }
     }
 
-    
+
     // MAIN
     int64_t nSubsidy = 0;
     if (nHeight == 0) {
@@ -1932,7 +1935,7 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 0 * COIN;
     } else if (nHeight == 1) {
         /* PREMINE: Current available wagerr on DEX marketc 198360471 wagerr
-        Info abobut premine: 
+        Info abobut premine:
         Full premine size is 198360471. First 100 blocks mine 250000 wagerr per block - 198360471 - (100 * 250000) = 173360471
         */
         // 87.4 % of premine
@@ -2991,7 +2994,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     CAmount nMoneySupplyPrev = pindex->pprev ? pindex->pprev->nMoneySupply : 0;
     pindex->nMoneySupply = nMoneySupplyPrev + nValueOut - nValueIn;
     pindex->nMint = pindex->nMoneySupply - nMoneySupplyPrev + nFees;
-    
+
     // adjust MoneySupply to account for WGR bet/burned, after first calculating actual Mint (pindex->nMint above)
     if (pindex->nHeight >= Params().BetStartHeight() ) {
         pindex->nMoneySupply = nMoneySupplyPrev + nValueOut - nValueIn - nValueBurned;
@@ -3052,7 +3055,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     // Validate bet payouts nExpectedMint against the block pindex->nMint to ensure reward wont pay to much.
     /* **TODO**
-     * 
+     *
      * Kokary: there are some oddities with fee calculation:
      * - Coinstake transactions do have fees, resulting in rougly 4400 satoshi less mints
      * - When there are no masternodes to pay, those MN rewards are not paid, resulting in 1*COIN less than expected mints
@@ -3062,14 +3065,75 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
      *         return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
      * Though if we keep this check for minimum mint, it should be moved to IsBlockValueValid().
      */
-    if (Params().NetworkID() == CBaseChainParams::TESTNET && (pindex->nHeight >= 15195 && pindex->nHeight <= 15220)) {
-        LogPrintf("Skipping validation of mint size on testnet subset");
-    } else if (pindex->nMint > nExpectedMint || pindex->nMint < (nExpectedMint - 2*COIN) || !IsBlockValueValid( block, nExpectedMint, pindex->nMint)) {
-        return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
+    if (IsSporkActive(SPORK_17_UPDATED_BETTING_PROTOCOL) &&  (pindex->nHeight >= Params().BetStartHeight() + 300000))  { // patch code
+
+        if (Params().NetworkID() == CBaseChainParams::TESTNET && (pindex->nHeight >= 15195 && pindex->nHeight <= 15220)) {
+            LogPrintf("Skipping validation of mint size on testnet subset");
+        }
+            else if (pindex->nMint > nExpectedMint || pindex->nMint < (nExpectedMint - 2*COIN) || !IsBlockValueValid( block, nExpectedMint, pindex->nMint)) {
+                return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
+            }
+
+        if (!IsBlockPayoutsValid(vExpectedAllPayouts, block)) {
+            return state.DoS(100, error("ConnectBlock() : Bet payout TX's don't match up with block payout TX's %i ", pindex->nHeight), REJECT_INVALID, "bad-cb-payout");
+        }
+    } //patch code
+    else { // patch code{
+
+        if (Params().NetworkID() == CBaseChainParams::TESTNET && (pindex->nHeight >= 15195 && pindex->nHeight <= 15220)) {
+            LogPrintf("Skipping validation of mint size on testnet subset");
+        }
+
+            else if (fBadResult) {
+                LogPrintf("Skipping validation of mint size due to old protocol");
+                fBadResult = false;
+            }
+
+            else if (pindex->nMint > nExpectedMint || pindex->nMint < (nExpectedMint - 2*COIN) || !IsBlockValueValid( block, nExpectedMint, pindex->nMint)) {
+                return state.DoS(100, error("ConnectBlock() : reward pays wrong amount (actual=%s vs limit=%s)", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)), REJECT_INVALID, "bad-cb-amount");
+            }
+
+        if (Params().NetworkID() == CBaseChainParams::MAIN && (pindex->nHeight >= Params().BetStartHeight())) {
+
+            // Look through the block for any results.
+            for (CTransaction tx : block.vtx) {
+            // Ensure the event TX has come from the old Oracle wallet.
+            const CTxIn &txin = tx.vin[0];
+            bool validOldOracleTx = IsOldOracleTx(txin);
+            bool validOracleTx = IsValidOracleTx(txin);
+                // If a old OMNO transaction.
+                if (validOldOracleTx) {
+
+                    for (unsigned int i = 0; i < tx.vout.size(); i++) {
+                        const CTxOut& txout = tx.vout[i];
+                        std::string s = txout.scriptPubKey.ToString();
+
+                        if (0 == strncmp(s.c_str(), "OP_RETURN", 9)) {
+                            vector<unsigned char> v = ParseHex(s.substr(9, string::npos));
+                            std::string opCode(v.begin(), v.end());
+
+                            // If results found set flag to true and turn off validation for next block.
+                            CBadResult plResult;
+                            if (CBadResult::FromOpCode(opCode, plResult)) {
+                                fBadResult = true;
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
     }
 
-    if (!IsBlockPayoutsValid(vExpectedAllPayouts, block))
-        return state.DoS(100, error("ConnectBlock() : Bet payout TX's don't match up with block payout TX's %i ", pindex->nHeight), REJECT_INVALID, "bad-cb-payout");
+    if (IsSporkActive(SPORK_17_UPDATED_BETTING_PROTOCOL)) {
+        LogPrintf("\n \n \n Patch - Spork Active 1 \n \n \n ");
+    }
+
+
+    if (fBadResult) {
+    LogPrintf("\n \n Patch - old result flag = true \n \n");
+    }
+    // end of Patch Code }
 
     // Clear all the payout vectors.
     vExpectedAllPayouts.clear();
@@ -4289,6 +4353,7 @@ bool AcceptBlockHeader(const CBlock& block, CValidationState& state, CBlockIndex
         LogPrintf("AcceptBlockHeader(): CheckBlockHeader failed \n");
         return false;
     }
+
 
     // Get prev block index
     CBlockIndex* pindexPrev = NULL;
@@ -6698,16 +6763,20 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 //       it was the one which was commented out
 int ActiveProtocol()
 {
+
+    if (!IsSporkActive(SPORK_17_UPDATED_BETTING_PROTOCOL)) {
+        return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
+    }
     // SPORK_14 was used for 70910. Leave it 'ON' so they don't see > 70910 nodes. They won't react to SPORK_15
     // messages because it's not in their code
-    if (IsSporkActive(SPORK_14_NEW_PROTOCOL_ENFORCEMENT))
+//    if (IsSporkActive(SPORK_14_NEW_PROTOCOL_ENFORCEMENT)){
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
-
+//    }
     // SPORK_15 was used for 70912 (v3.0.5+), commented out now.
     //if (IsSporkActive(SPORK_15_NEW_PROTOCOL_ENFORCEMENT_2))
     //        return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
 
-    return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
+//    return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }
 
 // requires LOCK(cs_vRecvMsg)
