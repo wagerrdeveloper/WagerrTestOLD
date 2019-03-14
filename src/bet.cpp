@@ -12,6 +12,7 @@
 #define BTX_FORMAT_VERSION 0x01
 #define BTX_HEX_PREFIX "42"
 #define BAD_RESULT_PREFIX '3' //patch code
+#define BAD_REFUND_PREFIX '4' //patch code
 
 // String lengths for all currently supported op codes.
 #define PE_OP_STRLEN  74
@@ -89,13 +90,14 @@ bool IsOldOracleTx(const CTxIn &txin)
 bool CBadResult::FromOpCode(std::string opCode, CBadResult &br)
 {
 
-    // Ensure the peerless event transaction type is correct.
-    if (opCode[0] != BAD_RESULT_PREFIX) {
-        // TODO - add proper error handling
-        return false;
+  // Ensure the peerless event transaction type is correct.
+    if (opCode[0] == BAD_RESULT_PREFIX || opCode[0] == BAD_REFUND_PREFIX) {
+
+        return true;
     }
 
-    return true;
+
+    return false;
 }
 // end of Patch Code }
 
