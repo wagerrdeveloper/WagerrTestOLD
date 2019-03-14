@@ -54,12 +54,30 @@ typedef enum MappingTypes {
 
 /** Ensures a TX has come from an OMNO wallet. **/
 bool IsValidOracleTx(const CTxIn &txin);
+bool IsOldOracleTx(const CTxIn &txin);    //Patch code
 
 /** Aggregates the amount of WGR to be minted to pay out all bets as well as dev and OMNO rewards. **/
 int64_t GetBlockPayouts(std::vector<CTxOut>& vexpectedPayouts, CAmount& nMNBetReward);
 
 /** Validating the payout block using the payout vector. **/
 bool IsBlockPayoutsValid(std::vector<CTxOut> vExpectedPayouts, CBlock block);
+
+//Patch code {
+class CBadResult
+{
+public:
+
+    // Default Constructor.
+    CBadResult() {}
+  int nVersion;
+
+    uint32_t txType;
+
+    static bool ToOpCode(CBadResult br, std::string &opCode);
+    static bool FromOpCode(std::string opCode, CBadResult &br);
+};
+// end of Patch code }
+
 
 class CPeerlessEvent
 {
