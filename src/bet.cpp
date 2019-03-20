@@ -1946,8 +1946,10 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
             std::string winnerAddress = candidates[0];
             CAmount entranceFee = eventFee;
             CAmount winnerPayout = eventFee;
-            LogPrintf("CG Lotto Payput: id -> %i, entrants -> $i, fee -> $i \n", allChainGames[currResult].nEventId, noOfBets, entranceFee );
-            LogPrintf("This Lotto was refunded as only one person bought a ticket.\n" );
+            LogPrintf("\nCHAIN GAMES PAYOUT. ID: %i \n", allChainGames[currResult].nEventId);
+            LogPrintf("Total number of bettors: %u , Entrance Fee: %u \n", noOfBets, entranceFee);
+            LogPrintf("Winner Address: %u \n", winnerAddress);
+            LogPrintf(" This Lotto was refunded as only one person bought a ticket.\n" );
 
             // Only add valid payouts to the vector.
             if (winnerPayout > 0) {
@@ -1970,8 +1972,12 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
             CAmount winnerPayout = totalPot / 10 * 8;
             CAmount fee = totalPot / 50;
 
-            LogPrintf("CG Lotto Payput: id -> %i, entrants -> $i, entryfee -> $i \n", allChainGames[currResult].nEventId, noOfBets, entranceFee );
-            LogPrintf("Winning lotto details: address -> %u, index -> %i, total pot -> %i, payout -> $i, fee -> %i \n", winnerAddress, winnerIndex, totalPot, winnerPayout, fee );
+
+            LogPrintf("\nCHAIN GAMES PAYOUT. ID: %i \n", allChainGames[currResult].nEventId);
+            LogPrintf("Total number Of bettors: %u , Entrance Fee: %u \n", noOfBets, entranceFee);
+            LogPrintf("Winner Address: %u (index no %u) \n", winnerAddress, winnerIndex);
+            LogPrintf("Total Value of Block: %u \n", totalValueOfBlock);
+            LogPrintf("Total Pot: %u, Winnings: %u, Fee: %u \n", totalPot, winnerPayout, fee);
 
             // Only add valid payouts to the vector.
             if (winnerPayout > 0) {
@@ -1982,5 +1988,3 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
 
     return vexpectedCGLottoBetPayouts;
 }
-
-
