@@ -1830,11 +1830,25 @@ std::vector<CTxOut> GetBetPayouts(int height)
 
                             if (pe.nHomeOdds < pe.nAwayOdds) {
                                 HomeFavorite = true;
-                                nSpreadsDifference = result.nHomeScore - result.nAwayScore;
+
+                                if (result.nHomeScore > result.nAwayScore){
+                                    nSpreadsDifference = result.nHomeScore - result.nAwayScore;
+                                }
+                                else{
+                                    nSpreadsDifference = NULL;   
+                                }
                             }
 
                             else {
-                                nSpreadsDifference = result.nAwayScore - result.nHomeScore;
+                                HomeFavorite = false;
+
+                                if (result.nAwayScore > result.nHomeScore){
+                                    nSpreadsDifference = result.nAwayScore - result.nHomeScore;
+                                }
+
+                                else{
+                                    nSpreadsDifference = NULL;   
+                                }
                             }
                         }
 
@@ -1865,23 +1879,34 @@ std::vector<CTxOut> GetBetPayouts(int height)
                             LogPrintf("PSE EVENT OP CODE - %s \n", opCode.c_str());
                             UpdateSpreads = true;
 
-                            if (pse.nPoints == nSpreadsDifference ) {
-                                nSpreadsWinner = WinnerType::push;
-                            }
-                            else if (HomeFavorite){
-                                if (pse.nPoints > nSpreadsDifference) {
+                            if (HomeFavorite){
+                               
+                                if (nSpreadsDifference == NULL) {
                                     nSpreadsWinner = WinnerType::awayWin;
                                 }
-                                else{
+                                else if (pse.nPoints < nSpreadsDifference) {
                                     nSpreadsWinner = WinnerType::homeWin;
                                 }
-                            }
-                            else {
-                                if (pse.nPoints < nSpreadsDifference) {
+                                else if (pse.nPoints > nSpreadsDifference) {
                                     nSpreadsWinner = WinnerType::awayWin;
                                 }
                                 else {
+                                    nSpreadsWinner = WinnerType::push;
+                                }
+                            }
+                            else {
+
+                                if (nSpreadsDifference == NULL) {
                                     nSpreadsWinner = WinnerType::homeWin;
+                                }
+                                else if (pse.nPoints > nSpreadsDifference) {
+                                    nSpreadsWinner = WinnerType::homeWin;
+                                }
+                                else if (pse.nPoints < nSpreadsDifference) {
+                                    nSpreadsWinner = WinnerType::awayWin;
+                                }
+                                else {
+                                    nSpreadsWinner = WinnerType::push;
                                 }
                             }
 
