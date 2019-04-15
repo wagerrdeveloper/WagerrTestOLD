@@ -2185,7 +2185,7 @@ std::vector<CTxOut> GetCGLottoBetPayouts (int height)
 
         // Look back the chain 10 days for any events and bets.
         CBlockIndex *BlocksIndex = NULL;
-        BlocksIndex = chainActive[nCurrentHeight - 14400];
+        BlocksIndex = chainActive[nCurrentHeight - Params().CGBetBlocksIndexTimespan()];
 
         time_t eventStart = 0;
         bool eventStartedFlag = false;

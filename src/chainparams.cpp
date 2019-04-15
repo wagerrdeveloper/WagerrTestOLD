@@ -165,6 +165,7 @@ public:
         nBetStartHeight = 298386;                                       // The block that betting protocols become active.
         vOracleWalletAddrs = {"WTogNAzaHf9oEbBoAv9RA49FdxyWaGLmdZ"};    // Oracle Masternode Event & Result Posting Wallet Addresses.
         nBetBlocksIndexTimespan = 23040;                                // Currently checking back 2 weeks for events and bets for each result.  (With approx. 2 days buffer).
+        nCGBetBlocksIndexTimespan = 100800;                             // Currently checking back 2 weeks for CG events and bets for each result.
         strDevPayoutAddr = "Wm5om9hBJTyKqv5FkMSfZ2FDMeGp12fkTe";        // Development fund payout address.
         strOMNOPayoutAddr = "WRBs8QD22urVNeGGYeAMP765ncxtUA1Rv2";       // OMNO fund payout address.
         nOMNORewardPermille = 24;                                       // profitAcc / (100-6) * 100 * 0.024 (nMNBetReward = Total Profit * 0.024).
@@ -308,6 +309,7 @@ public:
         vOracleWalletAddrs = {"TGFKr64W3tTMLZrKBhMAou9wnQmdNMrSG2",     // Oracle Masternode Event & Result Posting Wallet Address (Testnet).
                               "TWM5BQzfjDkBLGbcDtydfuNcuPfzPVSEhc" };
         nBetBlocksIndexTimespan = 23040;                                // Currently checking back 2 weeks for events and bets for each result. (With approx. 2 days buffer).
+        nCGBetBlocksIndexTimespan = 14400;                              // Currently checking back 1 day for CG events and bets for each result.
         strDevPayoutAddr = "TLceyDrdPLBu8DK6UZjKu4vCDUQBGPybcY";        // Development fund payout address (Testnet).
         strOMNOPayoutAddr = "TDunmyDASGDjYwhTF3SeDLsnDweyEBpfnP";       // OMNO fund payout address (Testnet).
         nOMNORewardPermille = 24;                                       // profitAcc / (100-6) * 100 * 0.024 (nMNBetReward = Total Profit * 0.024).

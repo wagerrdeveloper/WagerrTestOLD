@@ -132,6 +132,7 @@ public:
     /** Betting on blockchain **/
     std::vector<string> OracleWalletAddrs() const { return vOracleWalletAddrs; }
     int BetBlocksIndexTimespan() const { return nBetBlocksIndexTimespan; }
+    int CGBetBlocksIndexTimespan() const { return nCGBetBlocksIndexTimespan; }
     int BetStartHeight() const { return nBetStartHeight; }
     std::string DevPayoutAddr() const { return strDevPayoutAddr; }
     std::string OMNOPayoutAddr() const { return strOMNOPayoutAddr; }
@@ -210,6 +211,7 @@ protected:
 
     std::vector<string> vOracleWalletAddrs;
     int nBetBlocksIndexTimespan;
+    int nCGBetBlocksIndexTimespan;
     int nBetStartHeight;
     std::string strDevPayoutAddr;
     std::string strOMNOPayoutAddr;
